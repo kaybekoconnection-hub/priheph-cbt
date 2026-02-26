@@ -16,12 +16,23 @@ db.query(`
   CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,
     fullname TEXT,
-    email TEXT UNIQUE,
+    username TEXT UNIQUE,
+    class_level TEXT,
     password TEXT
   );
 `)
 .then(() => console.log("Students table ready"))
 .catch(err => console.error("Table creation error:", err));
+
+db.query(`
+  ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS username TEXT;
+`);
+
+db.query(`
+  ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS class_level TEXT;
+`);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 

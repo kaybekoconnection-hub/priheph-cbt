@@ -12,7 +12,16 @@ const db = new Pool({
     rejectUnauthorized: false
   }
 });
-
+db.query(`
+  CREATE TABLE IF NOT EXISTS students (
+    id SERIAL PRIMARY KEY,
+    fullname TEXT,
+    email TEXT UNIQUE,
+    password TEXT
+  );
+`)
+.then(() => console.log("Students table ready"))
+.catch(err => console.error("Table creation error:", err));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 

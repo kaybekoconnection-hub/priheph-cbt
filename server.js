@@ -33,6 +33,40 @@ db.query(`
   ALTER TABLE students
   ADD COLUMN IF NOT EXISTS class_level TEXT;
 `);
+/* ================= CREATE QUESTIONS TABLE ================= */
+db.query(`
+  CREATE TABLE IF NOT EXISTS questions (
+    id SERIAL PRIMARY KEY,
+    class_level TEXT,
+    subject TEXT,
+    question TEXT,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_answer TEXT
+  );
+`)
+.then(() => console.log("Questions table ready"))
+.catch(err => console.error("Questions table error:", err));
+
+
+/* ================= CREATE RESULTS TABLE ================= */
+db.query(`
+  CREATE TABLE IF NOT EXISTS results (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+    class_level TEXT,
+    subject TEXT,
+    score INTEGER,
+    total INTEGER,
+    answers JSONB,
+    time_used INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`)
+.then(() => console.log("Results table ready"))
+.catch(err => console.error("Results table error:", err));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 

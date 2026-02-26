@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Take Exam</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Exam</h2>
+
+<div id="questionsContainer"></div>
+
+<button onclick="submitExam()">Submit Exam</button>
+
+<script>
+const questions = JSON.parse(localStorage.getItem("questions"));
+const subject = localStorage.getItem("subject");
+
+if (!questions || questions.length === 0) {
+    alert("No questions found.");
+    window.location.href = "exam.html";
+}
+
+const container = document.getElementById("questionsContainer");
+
+questions.forEach((q, index) => {
+    const div = document.createElement("div");
+    div.classList.add("question");
+
+    div.innerHTML = `
+        <p><strong>${index + 1}. ${q.question}</strong></p>
+        <label><input type="radio" name="q${index}" value="A"> ${q.option_a}</label><br>
+        <label><input type="radio" name="q${index}" value="B"> ${q.option_b}</label><br>
+        <label><input type="radio" name="q${index}" value="C"> ${q.option_c}</label><br>
+        <label><input type="radio" name="q${index}" value="D"> ${q.option_d}</label><br>
+    `;
+
+    container.appendChild(div);
+});
+
+async function submitExam() {
+    let answers = [];
+
+    questions.forEach((q, index) => {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        answers.push(selected ? selected.value : null);
+    });
+
+    const res = await fetch("/submit-exam", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, subject })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        alert("Your score: " + data.score + " / 60");
+        localStorage.clear();
+        window.location.href = "exam.html";
+    } else {
+        alert("Submission failed.");
+    }
+}
+</script>
+
+</body>
+</html>

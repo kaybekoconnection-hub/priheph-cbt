@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Registration</title>
+</head>
+<body>
+
+<h2>Student Registration</h2>
+
+<form id="registerForm">
+
+    <input type="text" id="fullname" placeholder="Full Name" required><br><br>
+
+    <select id="class_level" required>
+        <option value="">Select Class</option>
+        <option>JSS1</option>
+        <option>JSS2</option>
+        <option>JSS3</option>
+        <option>SS1</option>
+        <option>SS2</option>
+        <option>SS3</option>
+    </select><br><br>
+
+    <input type="text" id="username" placeholder="Username" required><br><br>
+    <input type="password" id="password" placeholder="Password" required><br><br>
+
+    <button type="submit">Register</button>
+
+</form>
+
+<p id="message"></p>
+
+<script>
+document.getElementById("registerForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const fullname = document.getElementById("fullname").value;
+    const class_level = document.getElementById("class_level").value;
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const response = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullname, class_level, username, password })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+        alert("Registration successful");
+        window.location.href = "login.html";
+    } else {
+        alert("Registration failed");
+    }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Priheph CBT - Admin Panel</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    table, th, td { border: 1px solid black; }
+    th, td { padding: 8px; text-align: center; }
+    #dashboard { display: none; }
+    button { padding: 6px 12px; cursor: pointer; }
+    textarea { width: 100%; }
+    select, input { padding: 6px; margin: 5px 0; }
+  </style>
+</head>
+<body>
+
+<h2>Priheph Light of God Academy - Admin</h2>
+
+<!-- LOGIN -->
+<div id="loginSection">
+  <input type="text" id="username" placeholder="Username"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button onclick="login()">Login</button>
+  <p id="loginError" style="color:red;"></p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <h3>Exam Results</h3>
+
+  <input type="text" id="searchName" placeholder="Search by Name">
+
+  <select id="filterClass" onchange="filterSubjects('filter')">
+    <option value="">All Classes</option>
+    <option>JSS1</option>
+    <option>JSS2</option>
+    <option>JSS3</option>
+    <option>SS1</option>
+    <option>SS2</option>
+    <option>SS3</option>
+  </select>
+
+  <select id="filterSubject">
+    <option value="">All Subjects</option>
+  </select>
+
+  <button onclick="loadResults()">Search</button>
+
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Matric</th>
+        <th>Class</th>
+        <th>Subject</th>
+        <th>Score</th>
+        <th>Time Used</th>
+        <th>Review</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <hr>
+
+  <h3>Upload Questions</h3>
+
+  <select id="className" onchange="filterSubjects('upload')">
+    <option value="">Select Class</option>
+    <option>JSS1</option>
+    <option>JSS2</option>
+    <option>JSS3</option>
+    <option>SS1</option>
+    <option>SS2</option>
+    <option>SS3</option>
+  </select>
+
+  <select id="subject">
+    <option value="">Select Subject</option>
+  </select>
+
+  <br><br>
+
+  <textarea id="rawText" rows="12"
+    placeholder="Paste formatted questions here..."></textarea><br><br>
+
+  <button onclick="uploadQuestions()">Upload Questions</button>
+
+  <p id="uploadMessage" style="font-weight:bold;"></p>
+
+</div>
+
+<script>
+
+// ONE unified subject list for ALL classes
+const allSubjects = [
+  "ENGLISH",
+  "MATHEMATICS",
+  "HISTORY",
+  "CCA",
+  "CRS",
+  "IRS",
+  "BUSINESS STUDIES",
+  "DIGITAL TECHNOLOGIES",
+  "HOME MANAGEMENT",
+  "INTERMEDIATE SCIENCE",
+  "SOCIAL CITIZENSHIP",
+  "PHE",
+  "YORUBA",
+  "ECONOMICS",
+  "CITIZENSHIP AND HERITAGE",
+  "BIOLOGY",
+  "CHEMISTRY",
+  "PHYSICS",
+  "AGRIC",
+  "COMMERCE",
+  "FINANCIAL ACCOUNTING",
+  "MARKETING",
+  "GOVERNMENT",
+  "LITERATURE"
+];
+
+function normalize(text) {
+  return text.trim().toUpperCase();
+}
+
+// Populate subject dropdowns automatically
+function populateSubjects(selectId, firstOptionText) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `<option value="">${firstOptionText}</option>`;
+
+  allSubjects.forEach(sub => {
+    select.innerHTML += `<option>${sub}</option>`;
+  });
+}
+
+// Populate both dropdowns on page load
+window.onload = function() {
+  populateSubjects("subject", "Select Subject");
+  populateSubjects("filterSubject", "All Subjects");
+};
+
+function login() {
+  fetch("/admin-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: document.getElementById("username").value.trim(),
+      password: document.getElementById("password").value.trim()
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      loadResults();
+    } else {
+      document.getElementById("loginError").innerText = "Invalid login";
+    }
+  });
+}
+
+function loadResults() {
+
+  const name = document.getElementById("searchName").value.trim().toLowerCase();
+  const classFilter = document.getElementById("filterClass").value;
+  const subjectFilter = normalize(document.getElementById("filterSubject").value);
+
+  fetch("/admin-results")
+  .then(res => res.json())
+  .then(data => {
+
+    const tbody = document.querySelector("#resultsTable tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(row => {
+
+      if (
+        (name && !row.name.toLowerCase().includes(name)) ||
+        (classFilter && row.class_level !== classFilter) ||
+        (subjectFilter && normalize(row.subject) !== subjectFilter)
+      ) return;
+
+      const timeDisplay = row.time_used !== null
+  ? Math.floor(row.time_used / 60) + " min " + (row.time_used % 60) + " sec"
+  : "-";
+
+tbody.innerHTML += `
+  <tr>
+    <td>${row.name}</td>
+    <td>${row.matric}</td>
+    <td>${row.class_level}</td>
+    <td>${row.subject}</td>
+    <td>${row.score}/${row.total}</td>
+    <td>${timeDisplay}</td>
+    <td><a href="/admin/view/${row.id}">View</a></td>
+  </tr>
+`;
+    });
+
+  });
+}
+
+function uploadQuestions() {
+
+  const className = document.getElementById("className").value;
+  const subject = normalize(document.getElementById("subject").value);
+  const content = document.getElementById("rawText").value.trim();
+
+  if (!className || !subject || !content) {
+    document.getElementById("uploadMessage").innerText =
+      "Please fill all fields.";
+    return;
+  }
+
+  fetch("/bulk-upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      class_level: className,
+      subject: subject,
+      content: content
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.success) {
+      document.getElementById("uploadMessage").innerText =
+        data.inserted + " questions uploaded successfully!";
+      document.getElementById("rawText").value = "";
+    } else {
+      document.getElementById("uploadMessage").innerText =
+        "Upload failed: " + data.message;
+    }
+
+  })
+  .catch(() => {
+    document.getElementById("uploadMessage").innerText =
+      "Server error!";
+  });
+}
+
+</script>
+
+</body>
+</html>

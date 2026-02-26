@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exam Page</title>
+
+   <style>
+    #examHeader {
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        padding: 10px;
+        border-bottom: 2px solid black;
+        z-index: 1000;
+    }
+
+    #timer {
+        font-size: 40px;
+        font-weight: bold;
+        color: red;
+    }
+
+    .questionBox {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+    }
+
+    /* ADD THESE BELOW */
+
+    #headerRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    #schoolLogo {
+        width: 120px;
+        height: auto;
+    }
+
+    #titleSection {
+        text-align: center;
+        flex: 1;
+    }
+</style>
+
+</head>
+<body>
+
+<div id="examContainer">
+ <select id="subjectSelect">
+    <option disabled selected>Select Subject</option>
+</select>
+
+<div id="examHeader">
+    <div id="headerRow">
+
+        <img src="logo.png" id="schoolLogo" alt="School Logo">
+
+        <div id="titleSection">
+            <h2 id="examTitle"></h2>
+            <div id="studentInfo"></div>
+        </div>
+
+        <div id="timer">30:00</div>
+
+    </div>
+</div>
+
+<!-- Questions -->
+<div id="questionsArea"></div>
+
+<!-- Submit Button -->
+<button id="submitBtn">Submit Exam</button>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function() {
+
+let questions = [];
+let timeLeft = 1800;
+let timerInterval;
+let studentData = null;
+let selectedSubject = "";
+async function checkSession() {
+
+  const res = await fetch("/student-info", {
+    credentials: "include"
+  });
+document.getElementById("submitBtn").addEventListener("click", submitExam);
+  const data = await res.json();
+
+  if (!data.success) {
+    alert("Session expired. Login again.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  studentData = data.student;
+  console.log(studentData);
+  document.getElementById("studentInfo").innerHTML =
+  "Name: " + studentData.fullname +
+  " | Class: " + studentData.class_level;
+setupSubjects();
+
+// Auto reload previous exam if exists
+const savedSubject = localStorage.getItem("activeSubject");
+if (savedSubject) {
+  document.getElementById("subjectSelect").value = savedSubject;
+  loadExam(savedSubject);
+}
+
+}
+
+checkSession();
+function setupSubjects() {
+
+  const select = document.getElementById("subjectSelect");
+  select.innerHTML = '<option disabled selected>Select Subject</option>';
+
+  let availableSubjects =
+    studentData.class_level.startsWith("JSS")
+      ? jssSubjects
+      : ssSubjects;
+
+  availableSubjects.forEach(subject => {
+    const option = document.createElement("option");
+    option.value = subject;
+    option.textContent = subject;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", function () {
+    loadExam(this.value);
+  });
+}
+const jssSubjects = [
+  "ENGLISH",
+  "MATHEMATICS",
+  "HISTORY",
+  "CCA",
+  "CRS",
+  "IRS",
+  "BUSINESS STUDIES",
+  "DIGITAL TECHNOLOGIES",
+  "HOME MANAGEMENT",
+  "INTERMEDIATE SCIENCE",
+  "SOCIAL CITIZENSHIP",
+  "PHE",
+  "YORUBA"
+];
+
+const ssSubjects = [
+  "ENGLISH",
+  "MATHEMATICS",
+  "ECONOMICS",
+  "YORUBA",
+  "CITIZENSHIP AND HERITAGE",
+  "DIGITAL TECHNOLOGIES",
+  "BIOLOGY",
+  "CHEMISTRY",
+  "PHYSICS",
+  "AGRIC",
+  "COMMERCE",
+  "FINANCIAL ACCOUNTING",
+  "MARKETING",
+  "GOVERNMENT",
+  "LITERATURE",
+  "CRS",
+  "IRS"
+];
+
+
+
+function loadExam(subjectChosen) {
+
+  selectedSubject = subjectChosen;
+localStorage.setItem("activeSubject", selectedSubject);
+  fetch("/start-exam", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      subject: selectedSubject.trim().toUpperCase()
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (!data.success || data.questions.length === 0) {
+      alert("No questions found for this subject.");
+      return;
+    }
+
+    questions = data.questions;
+
+    document.getElementById("examTitle").innerText =
+      studentData.class_level + " - " + subjectChosen;
+
+    displayQuestions();
+    startTimer();
+  })
+  .catch(() => {
+    alert("Failed to load questions.");
+  });
+}
+
+function displayQuestions() {
+
+  const container = document.getElementById("questionsArea");
+  container.innerHTML = "";
+
+  questions.forEach((q, index) => {
+
+    container.innerHTML += `
+      <div class="questionBox">
+        <p><strong>Q${index + 1}.</strong> ${q.question.replace(/^\d+\.\s*/, "")}</p>
+        <label><input type="radio" name="q${index}" value="A"> A. ${q.option_a}</label><br>
+        <label><input type="radio" name="q${index}" value="B"> B. ${q.option_b}</label><br>
+        <label><input type="radio" name="q${index}" value="C"> C. ${q.option_c}</label><br>
+        <label><input type="radio" name="q${index}" value="D"> D. ${q.option_d}</label>
+      </div>
+    `;
+  });
+  // Restore previously saved answers
+questions.forEach((q, index) => {
+  const savedAnswer = localStorage.getItem("answer_" + selectedSubject + "_" + index);
+  if (savedAnswer) {
+    const radio = document.querySelector(
+      `input[name="q${index}"][value="${savedAnswer}"]`
+    );
+    if (radio) radio.checked = true;
+  }
+});
+
+// Save answer when student selects option
+questions.forEach((q, index) => {
+  const radios = document.querySelectorAll(`input[name="q${index}"]`);
+  radios.forEach(radio => {
+    radio.addEventListener("change", function () {
+      localStorage.setItem(
+        "answer_" + selectedSubject + "_" + index,
+        this.value
+      );
+    });
+  });
+});
+}
+
+function startTimer() {
+
+  clearInterval(timerInterval);
+
+  // Check if end time already exists
+  let endTime = localStorage.getItem("examEndTime_" + selectedSubject);
+
+  if (!endTime) {
+    // If not, create new end time (30 mins from now)
+    endTime = Date.now() + (30 * 60 * 1000);
+  localStorage.setItem("examEndTime_" + selectedSubject, endTime);
+  } else {
+    endTime = parseInt(endTime);
+  }
+
+  timerInterval = setInterval(() => {
+
+    const remaining = Math.floor((endTime - Date.now()) / 1000);
+
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      localStorage.removeItem("examEndTime_" + selectedSubject);
+      // Clear saved answers for this subject
+questions.forEach((q, index) => {
+  localStorage.removeItem("answer_" + selectedSubject + "_" + index);
+});
+      alert("Time is up! Submitting automatically...");
+      submitExam();
+      return;
+    }
+
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+
+    document.getElementById("timer").innerText =
+      (minutes < 10 ? "0" : "") + minutes + ":" +
+      (seconds < 10 ? "0" : "") + seconds;
+
+  }, 1000);
+}
+
+function submitExam() {
+
+  if (!confirm("Are you sure you want to submit your exam?")) {
+    return;
+  }
+
+  if (questions.length === 0) {
+    alert("No exam loaded.");
+    return;
+  }
+
+  clearInterval(timerInterval);
+localStorage.removeItem("examEndTime");
+localStorage.removeItem("activeSubject");
+  let answers = [];
+
+  questions.forEach((q, index) => {
+    const selected = document.querySelector(
+      `input[name="q${index}"]:checked`
+    );
+    answers.push(selected ? selected.value : null);
+  });
+
+  fetch("/submit-exam", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+  answers: answers,
+  subject: selectedSubject
+})
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.success) {
+      alert("Exam submitted successfully. Result will be available from admin.");
+      window.location.href = "index.html";
+    } else {
+      alert("Submission failed!");
+    }
+
+  })
+  .catch(() => {
+    alert("Server error during submission.");
+  });
+}
+});
+
+</script>
+</body>
+</html>

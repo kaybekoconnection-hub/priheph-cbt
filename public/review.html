@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Exam Review</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .correct { color: green; font-weight: bold; }
+    .wrong { color: red; font-weight: bold; }
+    .question { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<h2>Student Exam Review</h2>
+
+<div id="studentInfo"></div>
+<hr>
+
+<div id="reviewContainer"></div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+fetch("/review/" + id)
+.then(res => res.json())
+.then(data => {
+
+  if (!data) {
+    document.body.innerHTML = "<h3>No record found</h3>";
+    return;
+  }
+
+  document.getElementById("studentInfo").innerHTML =
+    "<b>Name:</b> " + data.name +
+    " | <b>Matric:</b> " + data.matric +
+    " | <b>Subject:</b> " + data.subject +
+    " | <b>Score:</b> " + data.score + " / 60";
+
+  const container = document.getElementById("reviewContainer");
+
+  data.answers.forEach((item, index) => {
+
+    let statusClass = item.studentAnswer === item.correctAnswer
+      ? "correct"
+      : "wrong";
+
+    container.innerHTML += `
+      <div class="question">
+        <p><b>${index+1}. ${item.question}</b></p>
+        <p>Student Answer:
+          <span class="${statusClass}">
+            ${item.studentAnswer || "No Answer"}
+          </span>
+        </p>
+        <p>Correct Answer:
+          <span class="correct">
+            ${item.correctAnswer}
+          </span>
+        </p>
+      </div>
+      <hr>
+    `;
+  });
+
+});
+
+</script>
+
+</body>
+</html>

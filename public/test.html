@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Exam</title>
+</head>
+<body>
+
+<h2>Student Examination</h2>
+
+<div id="examInfo"></div>
+
+<button onclick="startExam()">Start Exam</button>
+
+<div id="timer" style="font-size:20px; margin-top:20px;"></div>
+
+<form id="examForm" style="display:none;"></form>
+
+<br>
+<button id="submitBtn" onclick="submitExam()" style="display:none;">
+Submit Exam
+</button>
+
+<script>
+
+let questions = [];
+let timeLeft = 30 * 60; // 30 minutes
+let timerInterval = null;
+let student = JSON.parse(localStorage.getItem("student"));
+let examDetails = JSON.parse(localStorage.getItem("examDetails"));
+
+if (!student || !examDetails) {
+  alert("Session expired. Login again.");
+  window.location.href = "index.html";
+}
+
+document.getElementById("examInfo").innerHTML = `
+<b>Name:</b> ${student.name} <br>
+<b>Matric:</b> ${student.matric} <br>
+<b>Class:</b> ${examDetails.class} <br>
+<b>Subject:</b> ${examDetails.subject} <br>
+<b>Term:</b> ${examDetails.term}
+`;
+
+function startExam() {
+
+  fetch(`/questions?class=${examDetails.class}&subject=${examDetails.subject}`)
+  .then(res => res.json())
+  .then(data => {
+
+    if (!data || data.length === 0) {
+      alert("No questions available");
+      return;
+    }
+
+    questions = data;
+
+    document.getElementById("examForm").style.display = "block";
+    document.getElementById("submitBtn").style.display = "inline";
+    document.querySelector("button").style.display = "none";
+
+    showQuestions();
+    startTimer();
+
+  });
+
+}
+
+function showQuestions() {
+
+  const form = document.getElementById("examForm");
+  form.innerHTML = "";
+
+  questions.forEach((q, index) => {
+
+    form.innerHTML += `
+      <p>${index + 1}. ${q.question}</p>
+
+      <input type="radio" name="q${index}" value="A"> ${q.optionA}<br>
+      <input type="radio" name="q${index}" value="B"> ${q.optionB}<br>
+      <input type="radio" name="q${index}" value="C"> ${q.optionC}<br>
+      <input type="radio" name="q${index}" value="D"> ${q.optionD}<br><br>
+    `;
+
+  });
+
+}
+
+function startTimer() {
+
+  timerInterval = setInterval(() => {
+
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+
+    document.getElementById("timer").innerText =
+      "Time Left: " + minutes + ":" + (seconds < 10 ? "0" + seconds : seconds);
+
+    timeLeft--;
+
+    if (timeLeft < 0) {
+      clearInterval(timerInterval);
+      submitExam();
+    }
+
+  }, 1000);
+
+}
+
+function submitExam() {
+
+  clearInterval(timerInterval);
+
+  let score = 0;
+
+  questions.forEach((q, index) => {
+    const selected = document.querySelector(`input[name="q${index}"]:checked`);
+    if (selected && selected.value === q.correctAnswer) {
+      score += 2; // 2 marks each
+    }
+  });
+
+  fetch("/submit-result", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      matric: student.matric,
+      term: examDetails.term,
+      class: examDetails.class,
+      subject: examDetails.subject,
+      score: score
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+   alert("Exam Finished! " + student.name + ", Your Score: " + score + " / 60");
+
+    localStorage.removeItem("examDetails");
+
+    window.location.href = "dashboard.html";
+
+  });
+
+}
+
+</script>
+
+</body>
+</html>

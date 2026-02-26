@@ -36,9 +36,10 @@ app.post("/register", async (req, res) => {
       [fullname, class_level, username, password]
     );
     res.json({ success: true });
-  } catch {
-    res.json({ success: false });
-  }
+  } catch (err) {
+  console.log("REGISTER ERROR:", err);
+  res.json({ success: false });
+}
 });
 
 /* ================= STUDENT LOGIN ================= */

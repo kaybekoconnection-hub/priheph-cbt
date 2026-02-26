@@ -271,6 +271,52 @@ const option_d = lines.find(l => /^D\./i.test(l))?.replace(/^D\.\s*/i, "");
   }
 });
 
+/* ================= ADMIN VIEW QUESTIONS SUMMARY ================= */
+app.get("/admin-questions", async (req, res) => {
+
+  if (!req.session.admin) {
+    return res.redirect("/admin");
+  }
+
+  try {
+
+    const result = await db.query(`
+      SELECT class_level, subject, COUNT(*) AS total_questions
+      FROM questions
+      GROUP BY class_level, subject
+      ORDER BY class_level, subject
+    `);
+
+    let output = `
+      <h2>Uploaded Questions Summary</h2>
+      <table border="1" cellpadding="10">
+        <tr>
+          <th>Class</th>
+          <th>Subject</th>
+          <th>Total Questions</th>
+        </tr>
+    `;
+
+    result.rows.forEach(row => {
+      output += `
+        <tr>
+          <td>${row.class_level}</td>
+          <td>${row.subject}</td>
+          <td>${row.total_questions}</td>
+        </tr>
+      `;
+    });
+
+    output += "</table>";
+
+    res.send(output);
+
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading questions");
+  }
+
+});
 /* ================= START EXAM ================= */
 app.post("/start-exam", async (req, res) => {
 

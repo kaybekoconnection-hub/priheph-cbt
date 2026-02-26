@@ -372,6 +372,69 @@ app.get("/admin-questions/:class/:subject", async (req, res) => {
     console.log(err);
     res.send("Error loading questions");
   }
+/* ================= ADMIN DELETE PAGE ================= */
+app.get("/admin-delete", (req, res) => {
+
+  if (!req.session.admin) {
+    return res.redirect("/admin");
+  }
+
+  res.send(`
+    <h2>Delete Questions by Class & Subject</h2>
+
+    <form method="POST" action="/admin-delete-questions">
+      <label>Class:</label>
+      <input name="class_level" required />
+
+      <br><br>
+
+      <label>Subject:</label>
+      <input name="subject" required />
+
+      <br><br>
+
+      <button type="submit">Delete Questions</button>
+    </form>
+
+    <p style="color:red;">
+      Warning: This will permanently delete all questions for that class and subject.
+    </p>
+  `);
+
+});
+
+/* ================= DELETE QUESTIONS ================= */
+app.post("/admin-delete-questions", async (req, res) => {
+
+  if (!req.session.admin) {
+    return res.redirect("/admin");
+  }
+
+  const { class_level, subject } = req.body;
+
+  try {
+
+    const result = await db.query(
+      `DELETE FROM questions
+       WHERE UPPER(TRIM(class_level)) = $1
+       AND UPPER(TRIM(subject)) = $2`,
+      [
+        class_level.trim().toUpperCase(),
+        subject.trim().toUpperCase()
+      ]
+    );
+
+    res.send(`
+      <h3>${result.rowCount} questions deleted successfully.</h3>
+      <a href="/admin-delete">Go Back</a>
+    `);
+
+  } catch (err) {
+    console.log(err);
+    res.send("Delete failed");
+  }
+
+});
 
 });
 /* ================= START EXAM ================= */

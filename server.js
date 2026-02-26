@@ -317,6 +317,63 @@ app.get("/admin-questions", async (req, res) => {
   }
 
 });
+
+/* ================= ADMIN VIEW FULL QUESTIONS ================= */
+app.get("/admin-questions/:class/:subject", async (req, res) => {
+
+  if (!req.session.admin) {
+    return res.redirect("/admin");
+  }
+
+  const class_level = req.params.class;
+  const subject = req.params.subject;
+
+  try {
+
+    const result = await db.query(
+      `SELECT * FROM questions
+       WHERE UPPER(TRIM(class_level)) = $1
+       AND UPPER(TRIM(subject)) = $2
+       ORDER BY id ASC`,
+      [
+        class_level.trim().toUpperCase(),
+        subject.trim().toUpperCase()
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.send("<h3>No questions found for this class & subject</h3>");
+    }
+
+    let output = `
+      <h2>Questions for ${class_level} - ${subject}</h2>
+      <p>Total: ${result.rows.length}</p>
+      <hr>
+    `;
+
+    result.rows.forEach((q, index) => {
+      output += `
+        <div style="margin-bottom:25px; padding:15px; border:1px solid #ccc;">
+          <p><strong>${index + 1}.</strong> ${q.question}</p>
+          <ul>
+            <li>A. ${q.option_a}</li>
+            <li>B. ${q.option_b}</li>
+            <li>C. ${q.option_c}</li>
+            <li>D. ${q.option_d}</li>
+          </ul>
+          <p><strong>Correct Answer:</strong> ${q.correct_answer}</p>
+        </div>
+      `;
+    });
+
+    res.send(output);
+
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading questions");
+  }
+
+});
 /* ================= START EXAM ================= */
 app.post("/start-exam", async (req, res) => {
 

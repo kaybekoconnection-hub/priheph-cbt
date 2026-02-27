@@ -718,19 +718,7 @@ app.get("/check-users", async (req, res) => {
   res.json(result.rows);
 });
 
-app.get("/add-retake-column", async (req, res) => {
-  try {
-    await db.query(`
-      ALTER TABLE results 
-      ADD COLUMN IF NOT EXISTS retake_allowed BOOLEAN DEFAULT false;
-    `);
 
-    res.send("Column added successfully.");
-  } catch (err) {
-    console.log(err);
-    res.send("Error adding column.");
-  }
-});
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });

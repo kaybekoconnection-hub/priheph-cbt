@@ -454,75 +454,76 @@ app.post("/start-exam", async (req, res) => {
   if (!req.session.student) {
     return res.json({ success: false });
   }
+
+  // ✅ DEFINE THESE FIRST
+  const { subject } = req.body;
   const studentId = req.session.student.id;
+  const class_level = req.session.student.class_level;
 
-const existing = await db.query(
-  `SELECT retake_allowed FROM results
-   WHERE student_id = $1
-   AND UPPER(TRIM(subject)) = $2
-   ORDER BY id DESC
-   LIMIT 1`,
-  [
-    studentId,
-    subject.trim().toUpperCase()
-  ]
-);
-
-if (existing.rows.length > 0) {
-
-  const canRetake = existing.rows[0].retake_allowed;
-
-  if (!canRetake) {
-    return res.json({
-      success: false,
-      message: "You have already submitted this exam."
-    });
-  }
-
-  // If admin allowed retake → delete old result
-  await db.query(
-    `DELETE FROM results
+  // ✅ CHECK IF STUDENT ALREADY WROTE EXAM
+  const existing = await db.query(
+    `SELECT retake_allowed FROM results
      WHERE student_id = $1
-     AND UPPER(TRIM(subject)) = $2`,
+     AND UPPER(TRIM(subject)) = $2
+     ORDER BY id DESC
+     LIMIT 1`,
     [
       studentId,
       subject.trim().toUpperCase()
     ]
   );
-}
-req.session.startTime = Date.now();
-  const { subject } = req.body;
-  const class_level = req.session.student.class_level;
 
-  console.log("Class Level:", class_level);
-  console.log("Subject:", subject);
+  if (existing.rows.length > 0) {
+
+    const canRetake = existing.rows[0].retake_allowed;
+
+    if (!canRetake) {
+      return res.json({
+        success: false,
+        message: "You have already submitted this exam."
+      });
+    }
+
+    // If admin allowed retake → delete old result
+    await db.query(
+      `DELETE FROM results
+       WHERE student_id = $1
+       AND UPPER(TRIM(subject)) = $2`,
+      [
+        studentId,
+        subject.trim().toUpperCase()
+      ]
+    );
+  }
+
+  req.session.startTime = Date.now();
 
   try {
 
-  const result = await db.query(
-  `SELECT * FROM questions
-   WHERE UPPER(TRIM(class_level)) = $1
-   AND UPPER(TRIM(subject)) = $2
-   ORDER BY RANDOM()`,
-  [
-    class_level.trim().toUpperCase(),
-    subject.trim().toUpperCase()
-  ]
-); 
+    const result = await db.query(
+      `SELECT * FROM questions
+       WHERE UPPER(TRIM(class_level)) = $1
+       AND UPPER(TRIM(subject)) = $2
+       ORDER BY RANDOM()`,
+      [
+        class_level.trim().toUpperCase(),
+        subject.trim().toUpperCase()
+      ]
+    );
 
-if (!result.rows || result.rows.length === 0) {
-  return res.json({
-    success: false,
-    questions: []
-  });
-}
+    if (!result.rows || result.rows.length === 0) {
+      return res.json({
+        success: false,
+        questions: []
+      });
+    }
 
-req.session.examQuestions = result.rows;
+    req.session.examQuestions = result.rows;
 
-res.json({
-  success: true,
-  questions: result.rows
-});
+    res.json({
+      success: true,
+      questions: result.rows
+    });
 
   } catch (err) {
     console.log(err);

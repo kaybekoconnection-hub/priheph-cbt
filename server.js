@@ -454,6 +454,42 @@ app.post("/start-exam", async (req, res) => {
   if (!req.session.student) {
     return res.json({ success: false });
   }
+  const studentId = req.session.student.id;
+
+const existing = await db.query(
+  `SELECT retake_allowed FROM results
+   WHERE student_id = $1
+   AND UPPER(TRIM(subject)) = $2
+   ORDER BY id DESC
+   LIMIT 1`,
+  [
+    studentId,
+    subject.trim().toUpperCase()
+  ]
+);
+
+if (existing.rows.length > 0) {
+
+  const canRetake = existing.rows[0].retake_allowed;
+
+  if (!canRetake) {
+    return res.json({
+      success: false,
+      message: "You have already submitted this exam."
+    });
+  }
+
+  // If admin allowed retake → delete old result
+  await db.query(
+    `DELETE FROM results
+     WHERE student_id = $1
+     AND UPPER(TRIM(subject)) = $2`,
+    [
+      studentId,
+      subject.trim().toUpperCase()
+    ]
+  );
+}
 req.session.startTime = Date.now();
   const { subject } = req.body;
   const class_level = req.session.student.class_level;

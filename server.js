@@ -460,30 +460,37 @@ app.post("/start-exam", async (req, res) => {
     return res.json({ success: false });
   }
 
-  // ✅ DEFINE THESE FIRST
   const { subject } = req.body;
   const studentId = req.session.student.id;
   const class_level = req.session.student.class_level;
 
-  // ✅ CHECK IF STUDENT ALREADY WROTE EXAM
+  // Check if student already wrote
   const existing = await db.query(
-  `SELECT id FROM results
-   WHERE student_id = $1
-   AND UPPER(TRIM(subject)) = $2
-   LIMIT 1`,
-  [
-    studentId,
-    subject.trim().toUpperCase()
-  ]
-);
+    `SELECT id, retake_allowed FROM results
+     WHERE student_id = $1
+     AND UPPER(TRIM(subject)) = $2
+     LIMIT 1`,
+    [
+      studentId,
+      subject.trim().toUpperCase()
+    ]
+  );
 
-if (existing.rows.length > 0) {
-  return res.json({
-    success: false,
-    message: "You have already submitted this exam."
-  });
-}
+  if (existing.rows.length > 0) {
 
+    if (!existing.rows[0].retake_allowed) {
+      return res.json({
+        success: false,
+        message: "You have already submitted this exam."
+      });
+    }
+
+    // If retake allowed → delete old result
+    await db.query(
+      `DELETE FROM results WHERE id = $1`,
+      [existing.rows[0].id]
+    );
+  }
 
   req.session.startTime = Date.now();
 
@@ -500,11 +507,8 @@ if (existing.rows.length > 0) {
       ]
     );
 
-    if (!result.rows || result.rows.length === 0) {
-      return res.json({
-        success: false,
-        questions: []
-      });
+    if (!result.rows.length) {
+      return res.json({ success: false, questions: [] });
     }
 
     req.session.examQuestions = result.rows;
@@ -612,22 +616,11 @@ app.post("/admin/allow-retake", async (req, res) => {
 
   try {
 
-    const resultData = await db.query(
-      `SELECT student_id, subject FROM results WHERE id = $1`,
-      [resultId]
-    );
-
-    if (resultData.rows.length === 0) {
-      return res.json({ success: false });
-    }
-
-    const { student_id, subject } = resultData.rows[0];
-
     await db.query(
-      `DELETE FROM results
-       WHERE student_id = $1
-       AND UPPER(TRIM(subject)) = $2`,
-      [student_id, subject.trim().toUpperCase()]
+      `UPDATE results
+       SET retake_allowed = TRUE
+       WHERE id = $1`,
+      [resultId]
     );
 
     res.json({ success: true });

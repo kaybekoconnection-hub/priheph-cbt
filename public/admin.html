@@ -58,6 +58,7 @@
         <th>Score</th>
         <th>Time Used</th>
         <th>Review</th>
+        <th>Retake</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -197,6 +198,11 @@ tbody.innerHTML += `
     <td>${row.score}/${row.total}</td>
     <td>${timeDisplay}</td>
     <td><a href="/admin/view/${row.id}">View</a></td>
+    <td>
+      <button onclick="allowRetake(${row.id})">
+        Allow Retake
+      </button>
+    </td>
   </tr>
 `;
     });
@@ -243,7 +249,28 @@ function uploadQuestions() {
       "Server error!";
   });
 }
+function allowRetake(resultId) {
 
+  const confirmAction = confirm("Allow this student to retake this exam?");
+  if (!confirmAction) return;
+
+  fetch("/admin/allow-retake", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ resultId: resultId })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.success) {
+      alert("Retake allowed. Old result deleted.");
+      loadResults();
+    } else {
+      alert("Error allowing retake.");
+    }
+
+  });
+}
 </script>
 
 </body>

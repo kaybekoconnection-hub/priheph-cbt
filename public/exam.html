@@ -106,11 +106,6 @@ document.getElementById("submitBtn").addEventListener("click", submitExam);
 setupSubjects();
 
 // Auto reload previous exam if exists
-const savedSubject = localStorage.getItem("activeSubject");
-if (savedSubject) {
-  document.getElementById("subjectSelect").value = savedSubject;
-  loadExam(savedSubject);
-}
 
 }
 
@@ -177,7 +172,7 @@ const ssSubjects = [
 function loadExam(subjectChosen) {
 
   selectedSubject = subjectChosen;
-localStorage.setItem("activeSubject", selectedSubject);
+localStorage.setItem("activeSubject_" + studentData.id, selectedSubject);
   fetch("/start-exam", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -189,10 +184,11 @@ localStorage.setItem("activeSubject", selectedSubject);
   .then(res => res.json())
   .then(data => {
 
-    if (!data.success || data.questions.length === 0) {
-      alert("No questions found for this subject.");
-      return;
-    }
+   if (!data.success) {
+  alert(data.message || "You cannot take this exam again.");
+  localStorage.removeItem("activeSubject_" + studentData.id);
+  return;
+}
 
     questions = data.questions;
 
@@ -226,7 +222,7 @@ function displayQuestions() {
   });
   // Restore previously saved answers
 questions.forEach((q, index) => {
-  const savedAnswer = localStorage.getItem("answer_" + selectedSubject + "_" + index);
+  const savedAnswer = localStorage.getItem("answer_" + studentData.id + "_" + selectedSubject + "_" + index);
   if (savedAnswer) {
     const radio = document.querySelector(
       `input[name="q${index}"][value="${savedAnswer}"]`
@@ -241,7 +237,7 @@ questions.forEach((q, index) => {
   radios.forEach(radio => {
     radio.addEventListener("change", function () {
       localStorage.setItem(
-        "answer_" + selectedSubject + "_" + index,
+        "answer_" + studentData.id + "_" + selectedSubject + "_" + index,
         this.value
       );
     });
@@ -254,12 +250,12 @@ function startTimer() {
   clearInterval(timerInterval);
 
   // Check if end time already exists
-  let endTime = localStorage.getItem("examEndTime_" + selectedSubject);
+  let endTime = localStorage.getItem("examEndTime_" + studentData.id + "_" + selectedSubject);
 
   if (!endTime) {
     // If not, create new end time (30 mins from now)
     endTime = Date.now() + (30 * 60 * 1000);
-  localStorage.setItem("examEndTime_" + selectedSubject, endTime);
+ localStorage.setItem("examEndTime_" + studentData.id + "_" + selectedSubject, endTime);
   } else {
     endTime = parseInt(endTime);
   }
@@ -270,13 +266,13 @@ function startTimer() {
 
     if (remaining <= 0) {
       clearInterval(timerInterval);
-      localStorage.removeItem("examEndTime_" + selectedSubject);
+      localStorage.removeItem("examEndTime_" + studentData.id + "_" + selectedSubject);
       // Clear saved answers for this subject
 questions.forEach((q, index) => {
-  localStorage.removeItem("answer_" + selectedSubject + "_" + index);
+  localStorage.removeItem("answer_" + studentData.id + "_" + selectedSubject + "_" + index);
 });
       alert("Time is up! Submitting automatically...");
-      submitExam();
+      submitExam(true);
       return;
     }
 
@@ -289,11 +285,13 @@ questions.forEach((q, index) => {
 
   }, 1000);
 }
+function submitExam(autoSubmit = false) {
 
-function submitExam() {
-
-  if (!confirm("Are you sure you want to submit your exam?")) {
-    return;
+  // Only ask confirmation if it's NOT auto submit
+  if (!autoSubmit) {
+    if (!confirm("Are you sure you want to submit your exam?")) {
+      return;
+    }
   }
 
   if (questions.length === 0) {
@@ -302,8 +300,17 @@ function submitExam() {
   }
 
   clearInterval(timerInterval);
-localStorage.removeItem("examEndTime");
-localStorage.removeItem("activeSubject");
+
+  // Remove subject-specific timer
+  localStorage.removeItem("examEndTime_" + studentData.id + "_" + selectedSubject);
+
+  // Remove saved answers for this subject
+  questions.forEach((q, index) => {
+   localStorage.removeItem("answer_" + studentData.id + "_" + selectedSubject + "_" + index);
+  });
+
+  localStorage.removeItem("activeSubject_" + studentData.id);
+
   let answers = [];
 
   questions.forEach((q, index) => {
@@ -318,9 +325,9 @@ localStorage.removeItem("activeSubject");
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({
-  answers: answers,
-  subject: selectedSubject
-})
+      answers: answers,
+      subject: selectedSubject
+    })
   })
   .then(res => res.json())
   .then(data => {
@@ -337,6 +344,7 @@ localStorage.removeItem("activeSubject");
     alert("Server error during submission.");
   });
 }
+
 });
 
 </script>

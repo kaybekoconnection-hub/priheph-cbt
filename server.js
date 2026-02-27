@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const bodyParser = require("body-parser");
@@ -7,10 +8,10 @@ const app = express();
 const PORT = 3000;
 
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  connectionString: process.env.DATABASE_URL || "postgresql://postgres:yourpassword@localhost:5432/yourdbname",
+  ssl: process.env.DATABASE_URL
+    ? { rejectUnauthorized: false }
+    : false
 });
 db.query(`
   CREATE TABLE IF NOT EXISTS students (
@@ -118,13 +119,22 @@ app.post("/login", async (req, res) => {
     }
 
     // Save session
-    req.session.student = result.rows[0];
+   req.session.regenerate((err) => {
+  if (err) {
+    return res.json({ success: false });
+  }
 
-    // Send student back to frontend
-    return res.json({
-      success: true,
-      student: result.rows[0]
-    });
+  // 🔥 Clear everything completely
+  req.session.student = result.rows[0];
+  req.session.examQuestions = null;
+  req.session.startTime = null;
+
+  return res.json({
+    success: true,
+    student: result.rows[0]
+  });
+});
+
 
   } catch (err) {
     console.log(err);
@@ -368,10 +378,12 @@ app.get("/admin-questions/:class/:subject", async (req, res) => {
 
     res.send(output);
 
-  } catch (err) {
+ } catch (err) {
     console.log(err);
     res.send("Error loading questions");
   }
+
+});
 /* ================= ADMIN DELETE PAGE ================= */
 app.get("/admin-delete", (req, res) => {
 
@@ -436,7 +448,6 @@ app.post("/admin-delete-questions", async (req, res) => {
 
 });
 
-});
 /* ================= START EXAM ================= */
 app.post("/start-exam", async (req, res) => {
 
@@ -452,17 +463,16 @@ req.session.startTime = Date.now();
 
   try {
 
-    const result = await db.query(
+  const result = await db.query(
   `SELECT * FROM questions
    WHERE UPPER(TRIM(class_level)) = $1
    AND UPPER(TRIM(subject)) = $2
-   ORDER BY RANDOM()
-   LIMIT 30`,
+   ORDER BY RANDOM()`,
   [
     class_level.trim().toUpperCase(),
     subject.trim().toUpperCase()
   ]
-);
+); 
 
 if (!result.rows || result.rows.length === 0) {
   return res.json({
@@ -621,13 +631,12 @@ if (questionIds && questionIds.length > 0) {
   );
 
 } else {
-  const questionsData = await db.query(
-    `SELECT * FROM questions
-     WHERE class_level = $1
-     AND subject = $2
-     LIMIT 30`,
-    [result.class_level, result.subject]
-  );
+ const questionsData = await db.query(
+  `SELECT * FROM questions
+   WHERE class_level = $1
+   AND subject = $2`,
+  [result.class_level, result.subject]
+);
 
   questions = questionsData.rows;
 }
@@ -707,6 +716,20 @@ app.get("/student-info", (req, res) => {
 app.get("/check-users", async (req, res) => {
   const result = await db.query("SELECT username, password FROM students");
   res.json(result.rows);
+});
+
+app.get("/add-retake-column", async (req, res) => {
+  try {
+    await db.query(`
+      ALTER TABLE results 
+      ADD COLUMN IF NOT EXISTS retake_allowed BOOLEAN DEFAULT false;
+    `);
+
+    res.send("Column added successfully.");
+  } catch (err) {
+    console.log(err);
+    res.send("Error adding column.");
+  }
 });
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);

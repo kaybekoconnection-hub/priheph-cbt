@@ -13,6 +13,7 @@ const db = new Pool({
     ? { rejectUnauthorized: false }
     : false
 });
+
 db.query(`
   CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,
@@ -68,6 +69,10 @@ db.query(`
 `)
 .then(() => console.log("Results table ready"))
 .catch(err => console.error("Results table error:", err));
+db.query(`
+  ALTER TABLE results
+  ADD COLUMN IF NOT EXISTS retake_allowed BOOLEAN DEFAULT FALSE;
+`);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -462,39 +467,23 @@ app.post("/start-exam", async (req, res) => {
 
   // ✅ CHECK IF STUDENT ALREADY WROTE EXAM
   const existing = await db.query(
-    `SELECT retake_allowed FROM results
-     WHERE student_id = $1
-     AND UPPER(TRIM(subject)) = $2
-     ORDER BY id DESC
-     LIMIT 1`,
-    [
-      studentId,
-      subject.trim().toUpperCase()
-    ]
-  );
+  `SELECT id FROM results
+   WHERE student_id = $1
+   AND UPPER(TRIM(subject)) = $2
+   LIMIT 1`,
+  [
+    studentId,
+    subject.trim().toUpperCase()
+  ]
+);
 
-  if (existing.rows.length > 0) {
+if (existing.rows.length > 0) {
+  return res.json({
+    success: false,
+    message: "You have already submitted this exam."
+  });
+}
 
-    const canRetake = existing.rows[0].retake_allowed;
-
-    if (!canRetake) {
-      return res.json({
-        success: false,
-        message: "You have already submitted this exam."
-      });
-    }
-
-    // If admin allowed retake → delete old result
-    await db.query(
-      `DELETE FROM results
-       WHERE student_id = $1
-       AND UPPER(TRIM(subject)) = $2`,
-      [
-        studentId,
-        subject.trim().toUpperCase()
-      ]
-    );
-  }
 
   req.session.startTime = Date.now();
 
@@ -611,6 +600,43 @@ app.get("/admin-results", async (req, res) => {
 `);
 
   res.json(result.rows);
+});
+/* ================= ADMIN ALLOW RETAKE ================= */
+app.post("/admin/allow-retake", async (req, res) => {
+
+  if (!req.session.admin) {
+    return res.json({ success: false });
+  }
+
+  const { resultId } = req.body;
+
+  try {
+
+    const resultData = await db.query(
+      `SELECT student_id, subject FROM results WHERE id = $1`,
+      [resultId]
+    );
+
+    if (resultData.rows.length === 0) {
+      return res.json({ success: false });
+    }
+
+    const { student_id, subject } = resultData.rows[0];
+
+    await db.query(
+      `DELETE FROM results
+       WHERE student_id = $1
+       AND UPPER(TRIM(subject)) = $2`,
+      [student_id, subject.trim().toUpperCase()]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.log(err);
+    res.json({ success: false });
+  }
+
 });
 /* ================= ADMIN VIEW RESULT ================= */
 app.get("/admin/view/:id", async (req, res) => {

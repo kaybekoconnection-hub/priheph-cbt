@@ -537,22 +537,32 @@ app.post("/submit-exam", async (req, res) => {
 
   try {
 
-    const endTime = Date.now();
-    const startTime = req.session.startTime || endTime;
-    const timeUsed = Math.floor((endTime - startTime) / 1000);
+    if (!req.session.startTime) {
+  return res.json({
+    success: false,
+    message: "Session expired. Please login again."
+  });
+}
+
+const endTime = Date.now();
+const timeUsed = Math.floor((endTime - req.session.startTime) / 1000);
 
     const questions = req.session.examQuestions || [];
 
-    let score = 0;
+    let correctCount = 0;
 
-    questions.forEach((q, index) => {
-      if (
-        answers[index] &&
-        answers[index].toUpperCase() === q.correct_answer.toUpperCase()
-      ) {
-        score += 2;
-      }
-    });
+questions.forEach((q, index) => {
+  if (
+    answers[index] &&
+    answers[index].toUpperCase() === q.correct_answer.toUpperCase()
+  ) {
+    correctCount++;
+  }
+});
+
+// Scale score to 60
+const totalQuestions = questions.length;
+const scaledScore = Math.round((correctCount / totalQuestions) * 60);
 
     await db.query(
   "INSERT INTO results(student_id, class_level, subject, score, total, answers, time_used) VALUES($1,$2,$3,$4,$5,$6,$7)",
@@ -560,8 +570,8 @@ app.post("/submit-exam", async (req, res) => {
     req.session.student.id,
     class_level,
     subject.trim().toUpperCase(),
-    score,
-    questions.length * 2,
+    scaledScore,
+    60,
     JSON.stringify({
       answers: answers,
       questionIds: questions.map(q => q.id)
@@ -637,7 +647,6 @@ app.get("/admin/view/:id", async (req, res) => {
   if (!req.session.admin) {
     return res.redirect("/admin");
   }
-
   const resultId = req.params.id;
 
   try {

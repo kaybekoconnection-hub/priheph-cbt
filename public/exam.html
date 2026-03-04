@@ -71,7 +71,7 @@
 <div id="questionsArea"></div>
 
 <!-- Submit Button -->
-<button id="submitBtn">Submit Exam</button>
+<button type="button" id="submitBtn">Submit Exam</button>
 
 </div>
 
@@ -89,7 +89,7 @@ async function checkSession() {
   const res = await fetch("/student-info", {
     credentials: "include"
   });
-document.getElementById("submitBtn").addEventListener("click", submitExam);
+
   const data = await res.json();
 
   if (!data.success) {
@@ -99,15 +99,17 @@ document.getElementById("submitBtn").addEventListener("click", submitExam);
   }
 
   studentData = data.student;
-  console.log(studentData);
+
   document.getElementById("studentInfo").innerHTML =
-  "Name: " + studentData.fullname +
-  " | Class: " + studentData.class_level;
-setupSubjects();
+    "Name: " + studentData.fullname +
+    " | Class: " + studentData.class_level;
+
+  setupSubjects();
+}
 
 // Auto reload previous exam if exists
 
-}
+
 
 checkSession();
 function setupSubjects() {
@@ -344,6 +346,10 @@ function submitExam(autoSubmit = false) {
     alert("Server error during submission.");
   });
 }
+
+document.getElementById("submitBtn").addEventListener("click", function() {
+  submitExam(false);
+});
 
 });
 

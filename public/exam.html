@@ -84,6 +84,7 @@ let timeLeft = 1800;
 let timerInterval;
 let studentData = null;
 let selectedSubject = "";
+let examSubmitted = false;
 async function checkSession() {
 
   const res = await fetch("/student-info", {
@@ -289,6 +290,15 @@ questions.forEach((q, index) => {
 }
 function submitExam(autoSubmit = false) {
 
+  if (examSubmitted) return;
+
+  if (!autoSubmit) {
+    if (!confirm("Are you sure you want to submit your exam?")) {
+      return;
+    }
+  }
+
+
   // Only ask confirmation if it's NOT auto submit
   if (!autoSubmit) {
     if (!confirm("Are you sure you want to submit your exam?")) {
@@ -322,6 +332,7 @@ function submitExam(autoSubmit = false) {
     answers.push(selected ? selected.value : null);
   });
 
+  examSubmitted = true;
   fetch("/submit-exam", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

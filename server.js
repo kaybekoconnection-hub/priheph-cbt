@@ -583,7 +583,7 @@ const scaledScore = Math.round((correctCount / totalQuestions) * 60);
     req.session.examQuestions = null;
     req.session.startTime = null;
 
-    res.json({ success: true, score });
+   res.json({ success: true, score: scaledScore });
 
   } catch (err) {
     console.log(err);

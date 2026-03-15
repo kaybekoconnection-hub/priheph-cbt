@@ -421,6 +421,38 @@ app.get("/admin-results", async (req, res) => {
 
   res.json(result.rows);
 });
+
+/* ================= TEACHER RESULTS ================= */
+
+app.get("/teacher-results", async (req, res) => {
+
+  if (!req.session.teacher) {
+    return res.json([]);
+  }
+
+  const teacherSubjects = req.session.teacher.subjects;
+
+  const result = await db.query(`
+    SELECT 
+      results.id,
+      students.fullname AS name,
+      students.username AS matric,
+      results.class_level,
+      results.subject,
+      results.score,
+      results.total
+    FROM results
+    JOIN students ON students.id = results.student_id
+    ORDER BY results.created_at DESC
+  `);
+
+  const filtered = result.rows.filter(r =>
+    teacherSubjects.includes(r.subject)
+  );
+
+  res.json(filtered);
+
+});
 /* ================= ADMIN VIEW RESULT ================= */
 app.get("/admin/view/:id", async (req, res) => {
 

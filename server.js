@@ -617,8 +617,89 @@ app.get("/teacher/view/:id", async (req, res) => {
 
     const result = resultData.rows[0];
 
-    // redirect teacher to the admin review page
-    res.redirect("/admin/view/" + resultId);
+    let parsed;
+
+    if (typeof result.answers === "string") {
+      parsed = JSON.parse(result.answers);
+    } else {
+      parsed = result.answers;
+    }
+
+    let studentAnswers;
+    let questionIds;
+
+    if (parsed && parsed.questionIds) {
+      studentAnswers = parsed.answers;
+      questionIds = parsed.questionIds;
+    } else {
+      studentAnswers = parsed;
+      questionIds = null;
+    }
+
+    const questionsData = await db.query(
+      `SELECT * FROM questions WHERE id = ANY($1::int[])`,
+      [questionIds]
+    );
+
+    const questions = questionIds.map(id =>
+      questionsData.rows.find(q => q.id === id)
+    );
+
+    let output = `
+      <h2>Review for ${result.fullname}</h2>
+      <p>Class: ${result.class_level}</p>
+      <p>Subject: ${result.subject}</p>
+      <p>Score: ${result.score}/${result.total}</p>
+      <hr>
+    `;
+
+    questions.forEach((q, index) => {
+
+      const studentAnswer = studentAnswers[index] || null;
+      const correctAnswer = q.correct_answer;
+
+      const options = {
+        A: q.option_a,
+        B: q.option_b,
+        C: q.option_c,
+        D: q.option_d
+      };
+
+      const studentText = studentAnswer ? options[studentAnswer] : "Not Answered";
+      const correctText = options[correctAnswer];
+
+      const isCorrect =
+        studentAnswer &&
+        studentAnswer.toUpperCase() === correctAnswer.toUpperCase();
+
+      output += `
+        <div style="margin-bottom:25px; padding:15px; border:1px solid #ccc;">
+          <p><strong>Q${index + 1}.</strong> ${q.question}</p>
+
+          <ul style="list-style:none;">
+            <li>A. ${q.option_a}</li>
+            <li>B. ${q.option_b}</li>
+            <li>C. ${q.option_c}</li>
+            <li>D. ${q.option_d}</li>
+          </ul>
+
+          <p><strong>Student Chose:</strong> 
+            ${studentAnswer ? studentAnswer + ". " + studentText : "Not Answered"}
+          </p>
+
+          <p><strong>Correct Answer:</strong> 
+            ${correctAnswer}. ${correctText}
+          </p>
+
+          <p style="color:${isCorrect ? "green" : "red"};">
+            <strong>${isCorrect ? "✔ Correct" : "✘ Wrong"}</strong>
+          </p>
+        </div>
+      `;
+
+    });
+
+    res.send(output);
 
   } catch (err) {
     console.log(err);

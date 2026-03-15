@@ -592,6 +592,41 @@ app.get("/student-info", (req, res) => {
     student: req.session.student
   });
 });
+/* ================= TEACHER VIEW RESULT ================= */
+app.get("/teacher/view/:id", async (req, res) => {
+
+  if (!req.session.teacher) {
+    return res.redirect("/teacher-login.html");
+  }
+
+  const resultId = req.params.id;
+
+  try {
+
+    const resultData = await db.query(
+      `SELECT results.*, students.fullname
+       FROM results
+       JOIN students ON students.id = results.student_id
+       WHERE results.id = $1`,
+      [resultId]
+    );
+
+    if (resultData.rows.length === 0) {
+      return res.send("Result not found");
+    }
+
+    const result = resultData.rows[0];
+
+    // redirect teacher to the admin review page
+    res.redirect("/admin/view/" + resultId);
+
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading result");
+  }
+
+});
+
 /* ================= TEACHER LOGIN ================= */
 
 app.post("/teacher-login", (req, res) => {

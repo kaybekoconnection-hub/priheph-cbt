@@ -1,78 +1,18 @@
-require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const bodyParser = require("body-parser");
 const { Pool } = require("pg");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://postgres:yourpassword@localhost:5432/yourdbname",
-  ssl: process.env.DATABASE_URL
-    ? { rejectUnauthorized: false }
-    : false
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
-db.query(`
-  CREATE TABLE IF NOT EXISTS students (
-    id SERIAL PRIMARY KEY,
-    fullname TEXT,
-    username TEXT UNIQUE,
-    class_level TEXT,
-    password TEXT
-  );
-`)
-.then(() => console.log("Students table ready"))
-.catch(err => console.error("Table creation error:", err));
-
-db.query(`
-  ALTER TABLE students
-  ADD COLUMN IF NOT EXISTS username TEXT;
-`);
-
-db.query(`
-  ALTER TABLE students
-  ADD COLUMN IF NOT EXISTS class_level TEXT;
-`);
-/* ================= CREATE QUESTIONS TABLE ================= */
-db.query(`
-  CREATE TABLE IF NOT EXISTS questions (
-    id SERIAL PRIMARY KEY,
-    class_level TEXT,
-    subject TEXT,
-    question TEXT,
-    option_a TEXT,
-    option_b TEXT,
-    option_c TEXT,
-    option_d TEXT,
-    correct_answer TEXT
-  );
-`)
-.then(() => console.log("Questions table ready"))
-.catch(err => console.error("Questions table error:", err));
-
-
-/* ================= CREATE RESULTS TABLE ================= */
-db.query(`
-  CREATE TABLE IF NOT EXISTS results (
-    id SERIAL PRIMARY KEY,
-    student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
-    class_level TEXT,
-    subject TEXT,
-    score INTEGER,
-    total INTEGER,
-    answers JSONB,
-    time_used INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`)
-.then(() => console.log("Results table ready"))
-.catch(err => console.error("Results table error:", err));
-db.query(`
-  ALTER TABLE results
-  ADD COLUMN IF NOT EXISTS retake_allowed BOOLEAN DEFAULT FALSE;
-`);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -87,6 +27,83 @@ app.use(express.static("public"));
 const classes = ["JSS1", "JSS2", "JSS3", "SS1", "SS2", "SS3"];
 const subjects = ["Mathematics", "English", "Biology", "Physics", "Chemistry"];
 
+/* ================= TEACHERS ================= */
+
+const teachers = [
+
+{
+username: "simbiat001",
+password: "12345",
+subjects: ["ENGLISH","LITERATURE"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "rachael001",
+password: "12345",
+subjects: ["MATHEMATICS"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "dolapo001",
+password: "12345",
+subjects: ["ECONOMICS","COMMERCE","FINANCIAL ACCOUNTING","IRS"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "lateef001",
+password: "12345",
+subjects: ["YORUBA"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "emmanuel001",
+password: "12345",
+subjects: [
+"CITIZENSHIP AND HERITAGE",
+"DIGITAL TECHNOLOGIES",
+"BIOLOGY",
+"CHEMISTRY",
+"PHYSICS",
+"AGRIC",
+"CRS"
+],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "yomi001",
+password: "12345",
+subjects: ["MARKETING","IRS","DIGITAL TECHNOLOGIES"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "brown001",
+password: "12345",
+subjects: ["GOVERNMENT","INTERMEDIATE SCIENCE","PHE"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "ruth001",
+password: "12345",
+subjects: ["HISTORY","CCA","HOME MANAGEMENT"],
+classes: ["JSS1","JSS2","JSS3"]
+},
+
+{
+username: "peace001",
+password: "12345",
+subjects: ["BUSINESS STUDIES","SOCIAL CITIZENSHIP"],
+classes: ["JSS1","JSS2","JSS3"]
+}
+
+];
+
 /* ================= STUDENT REGISTER ================= */
 app.post("/register", async (req, res) => {
   const { fullname, class_level, username, password } = req.body;
@@ -96,10 +113,9 @@ app.post("/register", async (req, res) => {
       [fullname, class_level, username, password]
     );
     res.json({ success: true });
-  } catch (err) {
-  console.log("REGISTER ERROR:", err);
-  res.json({ success: false });
-}
+  } catch {
+    res.json({ success: false });
+  }
 });
 
 /* ================= STUDENT LOGIN ================= */
@@ -124,22 +140,13 @@ app.post("/login", async (req, res) => {
     }
 
     // Save session
-   req.session.regenerate((err) => {
-  if (err) {
-    return res.json({ success: false });
-  }
+    req.session.student = result.rows[0];
 
-  // 🔥 Clear everything completely
-  req.session.student = result.rows[0];
-  req.session.examQuestions = null;
-  req.session.startTime = null;
-
-  return res.json({
-    success: true,
-    student: result.rows[0]
-  });
-});
-
+    // Send student back to frontend
+    return res.json({
+      success: true,
+      student: result.rows[0]
+    });
 
   } catch (err) {
     console.log(err);
@@ -286,237 +293,46 @@ const option_d = lines.find(l => /^D\./i.test(l))?.replace(/^D\.\s*/i, "");
   }
 });
 
-/* ================= ADMIN VIEW QUESTIONS SUMMARY ================= */
-app.get("/admin-questions", async (req, res) => {
-
-  if (!req.session.admin) {
-    return res.redirect("/admin");
-  }
-
-  try {
-
-    const result = await db.query(`
-      SELECT class_level, subject, COUNT(*) AS total_questions
-      FROM questions
-      GROUP BY class_level, subject
-      ORDER BY class_level, subject
-    `);
-
-    let output = `
-      <h2>Uploaded Questions Summary</h2>
-      <table border="1" cellpadding="10">
-        <tr>
-          <th>Class</th>
-          <th>Subject</th>
-          <th>Total Questions</th>
-        </tr>
-    `;
-
-    result.rows.forEach(row => {
-      output += `
-        <tr>
-          <td>${row.class_level}</td>
-          <td>${row.subject}</td>
-          <td>${row.total_questions}</td>
-        </tr>
-      `;
-    });
-
-    output += "</table>";
-
-    res.send(output);
-
-  } catch (err) {
-    console.log(err);
-    res.send("Error loading questions");
-  }
-
-});
-
-/* ================= ADMIN VIEW FULL QUESTIONS ================= */
-app.get("/admin-questions/:class/:subject", async (req, res) => {
-
-  if (!req.session.admin) {
-    return res.redirect("/admin");
-  }
-
-  const class_level = req.params.class;
-  const subject = req.params.subject;
-
-  try {
-
-    const result = await db.query(
-      `SELECT * FROM questions
-       WHERE UPPER(TRIM(class_level)) = $1
-       AND UPPER(TRIM(subject)) = $2
-       ORDER BY id ASC`,
-      [
-        class_level.trim().toUpperCase(),
-        subject.trim().toUpperCase()
-      ]
-    );
-
-    if (result.rows.length === 0) {
-      return res.send("<h3>No questions found for this class & subject</h3>");
-    }
-
-    let output = `
-      <h2>Questions for ${class_level} - ${subject}</h2>
-      <p>Total: ${result.rows.length}</p>
-      <hr>
-    `;
-
-    result.rows.forEach((q, index) => {
-      output += `
-        <div style="margin-bottom:25px; padding:15px; border:1px solid #ccc;">
-          <p><strong>${index + 1}.</strong> ${q.question}</p>
-          <ul>
-            <li>A. ${q.option_a}</li>
-            <li>B. ${q.option_b}</li>
-            <li>C. ${q.option_c}</li>
-            <li>D. ${q.option_d}</li>
-          </ul>
-          <p><strong>Correct Answer:</strong> ${q.correct_answer}</p>
-        </div>
-      `;
-    });
-
-    res.send(output);
-
- } catch (err) {
-    console.log(err);
-    res.send("Error loading questions");
-  }
-
-});
-/* ================= ADMIN DELETE PAGE ================= */
-app.get("/admin-delete", (req, res) => {
-
-  if (!req.session.admin) {
-    return res.redirect("/admin");
-  }
-
-  res.send(`
-    <h2>Delete Questions by Class & Subject</h2>
-
-    <form method="POST" action="/admin-delete-questions">
-      <label>Class:</label>
-      <input name="class_level" required />
-
-      <br><br>
-
-      <label>Subject:</label>
-      <input name="subject" required />
-
-      <br><br>
-
-      <button type="submit">Delete Questions</button>
-    </form>
-
-    <p style="color:red;">
-      Warning: This will permanently delete all questions for that class and subject.
-    </p>
-  `);
-
-});
-
-/* ================= DELETE QUESTIONS ================= */
-app.post("/admin-delete-questions", async (req, res) => {
-
-  if (!req.session.admin) {
-    return res.redirect("/admin");
-  }
-
-  const { class_level, subject } = req.body;
-
-  try {
-
-    const result = await db.query(
-      `DELETE FROM questions
-       WHERE UPPER(TRIM(class_level)) = $1
-       AND UPPER(TRIM(subject)) = $2`,
-      [
-        class_level.trim().toUpperCase(),
-        subject.trim().toUpperCase()
-      ]
-    );
-
-    res.send(`
-      <h3>${result.rowCount} questions deleted successfully.</h3>
-      <a href="/admin-delete">Go Back</a>
-    `);
-
-  } catch (err) {
-    console.log(err);
-    res.send("Delete failed");
-  }
-
-});
-
 /* ================= START EXAM ================= */
 app.post("/start-exam", async (req, res) => {
 
   if (!req.session.student) {
     return res.json({ success: false });
   }
-
+req.session.startTime = Date.now();
   const { subject } = req.body;
-  const studentId = req.session.student.id;
   const class_level = req.session.student.class_level;
 
-  // Check if student already wrote
-  const existing = await db.query(
-    `SELECT id, retake_allowed FROM results
-     WHERE student_id = $1
-     AND UPPER(TRIM(subject)) = $2
-     LIMIT 1`,
-    [
-      studentId,
-      subject.trim().toUpperCase()
-    ]
-  );
-
-  if (existing.rows.length > 0) {
-
-    if (!existing.rows[0].retake_allowed) {
-      return res.json({
-        success: false,
-        message: "You have already submitted this exam."
-      });
-    }
-
-    // If retake allowed → delete old result
-    await db.query(
-      `DELETE FROM results WHERE id = $1`,
-      [existing.rows[0].id]
-    );
-  }
-
-  req.session.startTime = Date.now();
+  console.log("Class Level:", class_level);
+  console.log("Subject:", subject);
 
   try {
 
     const result = await db.query(
-      `SELECT * FROM questions
-       WHERE UPPER(TRIM(class_level)) = $1
-       AND UPPER(TRIM(subject)) = $2
-       ORDER BY RANDOM()`,
-      [
-        class_level.trim().toUpperCase(),
-        subject.trim().toUpperCase()
-      ]
-    );
+  `SELECT * FROM questions
+   WHERE UPPER(TRIM(class_level)) = $1
+   AND UPPER(TRIM(subject)) = $2
+   ORDER BY RANDOM()
+   LIMIT 30`,
+  [
+    class_level.trim().toUpperCase(),
+    subject.trim().toUpperCase()
+  ]
+);
 
-    if (!result.rows.length) {
-      return res.json({ success: false, questions: [] });
-    }
+if (!result.rows || result.rows.length === 0) {
+  return res.json({
+    success: false,
+    questions: []
+  });
+}
 
-    req.session.examQuestions = result.rows;
+req.session.examQuestions = result.rows;
 
-    res.json({
-      success: true,
-      questions: result.rows
-    });
+res.json({
+  success: true,
+  questions: result.rows
+});
 
   } catch (err) {
     console.log(err);
@@ -537,32 +353,22 @@ app.post("/submit-exam", async (req, res) => {
 
   try {
 
-    if (!req.session.startTime) {
-  return res.json({
-    success: false,
-    message: "Session expired. Please login again."
-  });
-}
-
-const endTime = Date.now();
-const timeUsed = Math.floor((endTime - req.session.startTime) / 1000);
+    const endTime = Date.now();
+    const startTime = req.session.startTime || endTime;
+    const timeUsed = Math.floor((endTime - startTime) / 1000);
 
     const questions = req.session.examQuestions || [];
 
-    let correctCount = 0;
+    let score = 0;
 
-questions.forEach((q, index) => {
-  if (
-    answers[index] &&
-    answers[index].toUpperCase() === q.correct_answer.toUpperCase()
-  ) {
-    correctCount++;
-  }
-});
-
-// Scale score to 60
-const totalQuestions = questions.length;
-const scaledScore = Math.round((correctCount / totalQuestions) * 60);
+    questions.forEach((q, index) => {
+      if (
+        answers[index] &&
+        answers[index].toUpperCase() === q.correct_answer.toUpperCase()
+      ) {
+        score += 2;
+      }
+    });
 
     await db.query(
   "INSERT INTO results(student_id, class_level, subject, score, total, answers, time_used) VALUES($1,$2,$3,$4,$5,$6,$7)",
@@ -570,8 +376,8 @@ const scaledScore = Math.round((correctCount / totalQuestions) * 60);
     req.session.student.id,
     class_level,
     subject.trim().toUpperCase(),
-    scaledScore,
-    60,
+    score,
+    questions.length * 2,
     JSON.stringify({
       answers: answers,
       questionIds: questions.map(q => q.id)
@@ -583,7 +389,7 @@ const scaledScore = Math.round((correctCount / totalQuestions) * 60);
     req.session.examQuestions = null;
     req.session.startTime = null;
 
-   res.json({ success: true, score: scaledScore });
+    res.json({ success: true, score });
 
   } catch (err) {
     console.log(err);
@@ -615,38 +421,13 @@ app.get("/admin-results", async (req, res) => {
 
   res.json(result.rows);
 });
-/* ================= ADMIN ALLOW RETAKE ================= */
-app.post("/admin/allow-retake", async (req, res) => {
-
-  if (!req.session.admin) {
-    return res.json({ success: false });
-  }
-
-  const { resultId } = req.body;
-
-  try {
-
-    await db.query(
-      `UPDATE results
-       SET retake_allowed = TRUE
-       WHERE id = $1`,
-      [resultId]
-    );
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.log(err);
-    res.json({ success: false });
-  }
-
-});
 /* ================= ADMIN VIEW RESULT ================= */
 app.get("/admin/view/:id", async (req, res) => {
 
   if (!req.session.admin) {
     return res.redirect("/admin");
   }
+
   const resultId = req.params.id;
 
   try {
@@ -696,12 +477,13 @@ if (questionIds && questionIds.length > 0) {
   );
 
 } else {
- const questionsData = await db.query(
-  `SELECT * FROM questions
-   WHERE class_level = $1
-   AND subject = $2`,
-  [result.class_level, result.subject]
-);
+  const questionsData = await db.query(
+    `SELECT * FROM questions
+     WHERE class_level = $1
+     AND subject = $2
+     LIMIT 30`,
+    [result.class_level, result.subject]
+  );
 
   questions = questionsData.rows;
 }
@@ -782,8 +564,6 @@ app.get("/check-users", async (req, res) => {
   const result = await db.query("SELECT username, password FROM students");
   res.json(result.rows);
 });
-
-
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });

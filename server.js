@@ -560,6 +560,39 @@ app.get("/student-info", (req, res) => {
     student: req.session.student
   });
 });
+/* ================= TEACHER LOGIN ================= */
+
+app.post("/teacher-login", (req, res) => {
+
+  const { username, password } = req.body;
+
+  const teacher = teachers.find(
+    t => t.username === username && t.password === password
+  );
+
+  if (!teacher) {
+    return res.json({ success: false });
+  }
+
+  req.session.teacher = teacher;
+
+  res.json({ success: true });
+
+});
+
+
+/* ================= TEACHER DASHBOARD ================= */
+
+app.get("/teacher-dashboard", (req, res) => {
+
+  if (!req.session.teacher) {
+    return res.redirect("/teacher-login.html");
+  }
+
+  res.sendFile(__dirname + "/public/teacher-dashboard.html");
+
+});
+
 app.get("/check-users", async (req, res) => {
   const result = await db.query("SELECT username, password FROM students");
   res.json(result.rows);

@@ -76,7 +76,7 @@
   </div>
 
   <!-- Question Navigator -->
-  <div style="flex:1; border:1px solid #ccc; padding:10px; max-height:500px; overflow:auto;">
+  <div style="flex:1; border:1px solid #ccc; padding:10px; max-height:500px; overflow:auto; position:sticky; top:120px;"></div>
     <h3>Questions</h3>
     <div id="questionNavigator"></div>
   </div>
@@ -252,11 +252,18 @@ questions.forEach((q, index) => {
   const radios = document.querySelectorAll(`input[name="q${index}"]`);
   radios.forEach(radio => {
     radio.addEventListener("change", function () {
-      localStorage.setItem(
-        "answer_" + studentData.id + "_" + selectedSubject + "_" + index,
-        this.value
-      );
-    });
+
+  localStorage.setItem(
+    "answer_" + studentData.id + "_" + selectedSubject + "_" + index,
+    this.value
+  );
+
+  const buttons = document.querySelectorAll("#questionNavigator button");
+  if (buttons[index]) {
+    buttons[index].style.background = "green";
+  }
+
+});
   });
 });
 createNavigator();

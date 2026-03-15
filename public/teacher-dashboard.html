@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Teacher Dashboard</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f4f4;
+padding:40px;
+}
+
+h2{
+margin-bottom:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+padding:10px;
+border:1px solid #ccc;
+text-align:center;
+}
+
+th{
+background:#2c3e50;
+color:white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Teacher Results Panel</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Student Name</th>
+<th>Matric</th>
+<th>Class</th>
+<th>Subject</th>
+<th>Score</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="results"></tbody>
+
+</table>
+
+<script>
+
+async function loadResults(){
+
+const res = await fetch("/teacher-results")
+const data = await res.json()
+
+let html = ""
+
+data.forEach(r=>{
+
+html += `
+<tr>
+<td>${r.name}</td>
+<td>${r.matric}</td>
+<td>${r.class_level}</td>
+<td>${r.subject}</td>
+<td>${r.score}/${r.total}</td>
+<td>
+<a href="/teacher/view/${r.id}">View</a>
+</td>
+</tr>
+`
+
+})
+
+document.getElementById("results").innerHTML = html
+
+}
+
+loadResults()
+
+</script>
+
+</body>
+</html>

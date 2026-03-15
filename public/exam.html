@@ -67,8 +67,21 @@
     </div>
 </div>
 
-<!-- Questions -->
-<div id="questionsArea"></div>
+<!-- Questions + Navigator -->
+<div style="display:flex; gap:20px; align-items:flex-start;">
+
+  <!-- Questions -->
+  <div style="flex:3;">
+    <div id="questionsArea"></div>
+  </div>
+
+  <!-- Question Navigator -->
+  <div style="flex:1; border:1px solid #ccc; padding:10px; max-height:500px; overflow:auto;">
+    <h3>Questions</h3>
+    <div id="questionNavigator"></div>
+  </div>
+
+</div>
 
 <!-- Submit Button -->
 <button type="button" id="submitBtn">Submit Exam</button>
@@ -214,7 +227,7 @@ function displayQuestions() {
   questions.forEach((q, index) => {
 
     container.innerHTML += `
-      <div class="questionBox">
+      <div class="questionBox" id="q${index}">
         <p><strong>Q${index + 1}.</strong> ${q.question.replace(/^\d+\.\s*/, "")}</p>
         <label><input type="radio" name="q${index}" value="A"> A. ${q.option_a}</label><br>
         <label><input type="radio" name="q${index}" value="B"> B. ${q.option_b}</label><br>
@@ -246,6 +259,7 @@ questions.forEach((q, index) => {
     });
   });
 });
+createNavigator();
 }
 
 function startTimer() {
@@ -358,6 +372,36 @@ function submitExam(autoSubmit = false) {
   });
 }
 
+function createNavigator() {
+
+  const nav = document.getElementById("questionNavigator");
+  nav.innerHTML = "";
+
+  questions.forEach((q, index) => {
+
+    const btn = document.createElement("button");
+
+    btn.innerText = index + 1;
+
+    btn.style.width = "35px";
+    btn.style.height = "35px";
+    btn.style.margin = "4px";
+    btn.style.background = "red";
+    btn.style.color = "white";
+    btn.style.border = "none";
+    btn.style.cursor = "pointer";
+
+    btn.onclick = function() {
+      document.getElementById("q" + index).scrollIntoView({
+        behavior: "smooth"
+      });
+    };
+
+    nav.appendChild(btn);
+
+  });
+
+}
 document.getElementById("submitBtn").addEventListener("click", function() {
   submitExam(false);
 });

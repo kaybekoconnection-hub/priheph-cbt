@@ -299,14 +299,6 @@ app.post("/start-exam", async (req, res) => {
   if (!req.session.student) {
     return res.json({ success: false });
   }
-req.session.startTime = Date.now();
-  const { subject } = req.body;
-  const class_level = req.session.student.class_level;
-  app.post("/start-exam", async (req, res) => {
-
-  if (!req.session.student) {
-    return res.json({ success: false });
-  }
 
   req.session.startTime = Date.now();
 
@@ -329,39 +321,33 @@ req.session.startTime = Date.now();
     });
   }
 
-  console.log("Class Level:", class_level);
-  console.log("Subject:", subject);
-
-  console.log("Class Level:", class_level);
-  console.log("Subject:", subject);
-
   try {
 
     const result = await db.query(
-  `SELECT * FROM questions
-   WHERE UPPER(TRIM(class_level)) = $1
-   AND UPPER(TRIM(subject)) = $2
-   ORDER BY RANDOM()
-   LIMIT 30`,
-  [
-    class_level.trim().toUpperCase(),
-    subject.trim().toUpperCase()
-  ]
-);
+      `SELECT * FROM questions
+       WHERE UPPER(TRIM(class_level)) = $1
+       AND UPPER(TRIM(subject)) = $2
+       ORDER BY RANDOM()
+       LIMIT 30`,
+      [
+        class_level.trim().toUpperCase(),
+        subject.trim().toUpperCase()
+      ]
+    );
 
-if (!result.rows || result.rows.length === 0) {
-  return res.json({
-    success: false,
-    questions: []
-  });
-}
+    if (!result.rows || result.rows.length === 0) {
+      return res.json({
+        success: false,
+        questions: []
+      });
+    }
 
-req.session.examQuestions = result.rows;
+    req.session.examQuestions = result.rows;
 
-res.json({
-  success: true,
-  questions: result.rows
-});
+    res.json({
+      success: true,
+      questions: result.rows
+    });
 
   } catch (err) {
     console.log(err);

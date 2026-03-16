@@ -335,7 +335,7 @@ app.post("/start-exam", async (req, res) => {
        WHERE UPPER(TRIM(class_level)) = $1
        AND UPPER(TRIM(subject)) = $2
        ORDER BY RANDOM()
-       LIMIT 30`,
+       LIMIT 50`,
       [
         class_level.trim().toUpperCase(),
         subject.trim().toUpperCase()

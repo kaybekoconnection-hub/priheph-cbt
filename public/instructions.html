@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Exam Instructions</title>
+
+<style>
+body{
+font-family: Arial, sans-serif;
+background:#f5f5f5;
+padding:40px;
+}
+
+.container{
+max-width:700px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:8px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+h2{
+text-align:center;
+}
+
+ul{
+line-height:1.8;
+}
+
+button{
+padding:12px 25px;
+font-size:16px;
+background:#007bff;
+color:white;
+border:none;
+cursor:pointer;
+border-radius:5px;
+}
+
+button:hover{
+background:#0056b3;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Exam Instructions</h2>
+
+<ul>
+
+<li>This examination contains multiple choice questions.</li>
+
+<li>The exam duration is <b>30 minutes</b>.</li>
+
+<li>The total score is <b>60 marks</b>.</li>
+
+<li>Each question has four options: A, B, C, and D.</li>
+
+<li>Click the correct option to answer a question.</li>
+
+<li>You can navigate between questions using the question numbers.</li>
+
+<li>The timer will automatically submit the exam when time finishes.</li>
+
+<li>Do not refresh the page during the exam.</li>
+
+<li>Do not close the browser until the exam is submitted.</li>
+
+<li>Once submitted, you cannot take the exam again.</li>
+
+</ul>
+
+<br>
+
+<center>
+<button onclick="startExam()">Start Exam</button>
+</center>
+
+</div>
+
+<script>
+
+function startExam(){
+window.location.href="exam.html";
+}
+
+</script>
+
+</body>
+</html>

@@ -256,28 +256,7 @@ function uploadQuestions() {
       "Server error!";
   });
 }
-function allowRetake(resultId) {
 
-  const confirmAction = confirm("Allow this student to retake this exam?");
-  if (!confirmAction) return;
-
-  fetch("/admin/allow-retake", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ resultId: resultId })
-  })
-  .then(res => res.json())
-  .then(data => {
-
-    if (data.success) {
-      alert("Retake allowed. Old result deleted.");
-      loadResults();
-    } else {
-      alert("Error allowing retake.");
-    }
-
-  });
-}
 function allowRetake(resultId) {
 
   const confirmAction = confirm("Allow this student to retake this exam?");
@@ -331,30 +310,9 @@ function deleteResult(id) {
 
 }
 
-/* DELETE RESULT */
-async function deleteResult(id){
 
-const confirmDelete = confirm("Delete this result permanently?");
-if(!confirmDelete) return;
 
-const res = await fetch("/admin-delete-result/" + id,{
-method:"DELETE"
-});
 
-const data = await res.json();
-
-if(data.success){
-
-alert("Result deleted successfully");
-loadResults();
-
-}else{
-
-alert("Failed to delete result");
-
-}
-
-}
 </script>
 
 </body>

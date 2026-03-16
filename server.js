@@ -180,6 +180,13 @@ app.get("/admin-dashboard", (req, res) => {
   res.sendFile(__dirname + "/public/admin-dashboard.html");
 });
 
+app.get("/admin-delete", (req, res) => {
+  if (!req.session.admin) {
+    return res.redirect("/admin");
+  }
+
+  res.sendFile(__dirname + "/public/admin-delete.html");
+});
 /* ================= ADMIN LOGOUT ================= */
 app.get("/admin-logout", (req, res) => {
   req.session.destroy();

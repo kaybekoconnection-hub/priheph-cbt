@@ -294,16 +294,23 @@ function startTimer() {
     const remaining = Math.floor((endTime - Date.now()) / 1000);
 
     if (remaining <= 0) {
-      clearInterval(timerInterval);
-      localStorage.removeItem("examEndTime_" + studentData.id + "_" + selectedSubject);
-      // Clear saved answers for this subject
-questions.forEach((q, index) => {
-  localStorage.removeItem("answer_" + studentData.id + "_" + selectedSubject + "_" + index);
-});
-      alert("Time is up! Submitting automatically...");
-      submitExam(true);
-      return;
-    }
+
+  clearInterval(timerInterval);
+
+  localStorage.removeItem("examEndTime_" + studentData.id + "_" + selectedSubject);
+
+  // clear saved answers
+  questions.forEach((q, index) => {
+    localStorage.removeItem("answer_" + studentData.id + "_" + selectedSubject + "_" + index);
+  });
+
+  document.getElementById("timer").innerText = "00:00";
+
+  // Automatically submit exam
+  submitExam(true);
+
+  return;
+}
 
     const minutes = Math.floor(remaining / 60);
     const seconds = remaining % 60;
@@ -325,12 +332,6 @@ function submitExam(autoSubmit = false) {
   }
 
 
-  // Only ask confirmation if it's NOT auto submit
-  if (!autoSubmit) {
-    if (!confirm("Are you sure you want to submit your exam?")) {
-      return;
-    }
-  }
 
   if (questions.length === 0) {
     alert("No exam loaded.");

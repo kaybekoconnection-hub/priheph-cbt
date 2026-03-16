@@ -122,7 +122,7 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
 
     if (data.success) {
         localStorage.setItem("student", JSON.stringify(data.student));
-        window.location.href = "exam.html";
+        window.location.href = "instructions.html";
     } else {
         alert("Invalid login details");
     }

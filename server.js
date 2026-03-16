@@ -302,6 +302,35 @@ app.post("/start-exam", async (req, res) => {
 req.session.startTime = Date.now();
   const { subject } = req.body;
   const class_level = req.session.student.class_level;
+  app.post("/start-exam", async (req, res) => {
+
+  if (!req.session.student) {
+    return res.json({ success: false });
+  }
+
+  req.session.startTime = Date.now();
+
+  const { subject } = req.body;
+  const class_level = req.session.student.class_level;
+
+  // BLOCK STUDENT FROM TAKING SAME EXAM AGAIN
+  const alreadyTaken = await db.query(
+    "SELECT * FROM results WHERE student_id = $1 AND subject = $2",
+    [
+      req.session.student.id,
+      subject.trim().toUpperCase()
+    ]
+  );
+
+  if (alreadyTaken.rows.length > 0) {
+    return res.json({
+      success: false,
+      message: "You have already taken this exam. Contact admin if you need a retake."
+    });
+  }
+
+  console.log("Class Level:", class_level);
+  console.log("Subject:", subject);
 
   console.log("Class Level:", class_level);
   console.log("Subject:", subject);

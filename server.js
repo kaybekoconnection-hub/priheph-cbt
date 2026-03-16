@@ -381,31 +381,33 @@ app.post("/submit-exam", async (req, res) => {
 
     const questions = req.session.examQuestions || [];
 
-    let score = 0;
+   let correct = 0;
 
-    questions.forEach((q, index) => {
-      if (
-        answers[index] &&
-        answers[index].toUpperCase() === q.correct_answer.toUpperCase()
-      ) {
-        score += 2;
-      }
-    });
+questions.forEach((q, index) => {
+  if (
+    answers[index] &&
+    answers[index].toUpperCase() === q.correct_answer.toUpperCase()
+  ) {
+    correct++;
+  }
+});
 
-    await db.query(
-  "INSERT INTO results(student_id, class_level, subject, score, total, answers, time_used) VALUES($1,$2,$3,$4,$5,$6,$7)",
-  [
-    req.session.student.id,
-    class_level,
-    subject.trim().toUpperCase(),
-    score,
-    questions.length * 2,
-    JSON.stringify({
-      answers: answers,
-      questionIds: questions.map(q => q.id)
-    }),
-    timeUsed
-  ]
+const score = Math.round((correct / questions.length) * 60);
+
+   await db.query(
+"INSERT INTO results(student_id, class_level, subject, score, total, answers, time_used) VALUES($1,$2,$3,$4,$5,$6,$7)",
+[
+req.session.student.id,
+class_level,
+subject.trim().toUpperCase(),
+score,
+60,
+JSON.stringify({
+answers: answers,
+questionIds: questions.map(q => q.id)
+}),
+timeUsed
+]
 );
 
     req.session.examQuestions = null;

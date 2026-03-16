@@ -1,102 +1,79 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<title>Delete Questions</title>
-
-<style>
-body{
-font-family: Arial;
-padding:40px;
-background:#f4f4f4;
-}
-
-table{
-width:100%;
-border-collapse: collapse;
-background:white;
-}
-
-th,td{
-padding:10px;
-border:1px solid #ccc;
-text-align:left;
-}
-
-button{
-background:red;
-color:white;
-border:none;
-padding:6px 10px;
-cursor:pointer;
-}
-</style>
-
+<title>Delete Subject Questions</title>
 </head>
+
 <body>
 
-<h2>Delete Questions</h2>
+<h2>Delete Questions by Subject</h2>
 
-<table id="questionsTable">
+<select id="class">
 
-<thead>
-<tr>
-<th>ID</th>
-<th>Class</th>
-<th>Subject</th>
-<th>Question</th>
-<th>Delete</th>
-</tr>
-</thead>
+<option>JSS1</option>
+<option>JSS2</option>
+<option>JSS3</option>
+<option>SS1</option>
+<option>SS2</option>
+<option>SS3</option>
 
-<tbody></tbody>
+</select>
 
-</table>
+<select id="subject">
+
+<option>MATHEMATICS</option>
+<option>ENGLISH</option>
+<option>BIOLOGY</option>
+<option>PHYSICS</option>
+<option>CHEMISTRY</option>
+
+</select>
+
+<button onclick="deleteQuestions()">Delete Questions</button>
+
+<p id="msg"></p>
 
 <script>
 
-async function loadQuestions(){
+async function deleteQuestions(){
 
-const res = await fetch("/get-questions");
+const class_level = document.getElementById("class").value;
+const subject = document.getElementById("subject").value;
+
+if(!confirm("Delete ALL questions for this subject?")) return;
+
+const res = await fetch("/delete-subject-questions",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body: JSON.stringify({
+class_level,
+subject
+})
+
+});
+
 const data = await res.json();
 
-const table = document.querySelector("#questionsTable tbody");
-table.innerHTML = "";
+if(data.success){
 
-data.forEach(q=>{
+document.getElementById("msg").innerText="Questions deleted successfully";
 
-table.innerHTML += `
-<tr>
-<td>${q.id}</td>
-<td>${q.class_level}</td>
-<td>${q.subject}</td>
-<td>${q.question}</td>
-<td>
-<button onclick="deleteQuestion(${q.id})">Delete</button>
-</td>
-</tr>
-`;
+}else{
 
-});
+document.getElementById("msg").innerText="Delete failed";
 
 }
 
-async function deleteQuestion(id){
-
-if(!confirm("Delete this question?")) return;
-
-await fetch("/delete-question",{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body: JSON.stringify({id})
-});
-
-loadQuestions();
-
 }
-
-loadQuestions();
 
 </script>
 
 </body>
+
 </html>

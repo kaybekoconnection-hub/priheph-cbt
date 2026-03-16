@@ -810,22 +810,34 @@ res.json(result.rows);
 });
 
 
-/* ================= DELETE QUESTION ================= */
+/* ================= DELETE SUBJECT QUESTIONS ================= */
 
-app.post("/delete-question", async (req,res)=>{
+app.post("/delete-subject-questions", async (req,res)=>{
 
 if(!req.session.admin){
 return res.json({success:false});
 }
 
-const {id} = req.body;
+const {class_level, subject} = req.body;
+
+try{
 
 await db.query(
-"DELETE FROM questions WHERE id=$1",
-[id]
+"DELETE FROM questions WHERE UPPER(TRIM(class_level))=$1 AND UPPER(TRIM(subject))=$2",
+[
+class_level.trim().toUpperCase(),
+subject.trim().toUpperCase()
+]
 );
 
 res.json({success:true});
+
+}catch(err){
+
+console.log(err);
+res.json({success:false});
+
+}
 
 });
 

@@ -791,6 +791,45 @@ app.get("/check-users", async (req, res) => {
   const result = await db.query("SELECT username, password FROM students");
   res.json(result.rows);
 });
+
+
+/* ================= GET QUESTIONS ================= */
+
+app.get("/get-questions", async (req,res)=>{
+
+if(!req.session.admin){
+return res.json([]);
+}
+
+const result = await db.query(
+"SELECT * FROM questions ORDER BY id DESC"
+);
+
+res.json(result.rows);
+
+});
+
+
+/* ================= DELETE QUESTION ================= */
+
+app.post("/delete-question", async (req,res)=>{
+
+if(!req.session.admin){
+return res.json({success:false});
+}
+
+const {id} = req.body;
+
+await db.query(
+"DELETE FROM questions WHERE id=$1",
+[id]
+);
+
+res.json({success:true});
+
+});
+
+
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });

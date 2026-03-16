@@ -727,7 +727,31 @@ app.post("/teacher-login", (req, res) => {
   res.json({ success: true });
 
 });
+/* ================= DELETE RESULT ================= */
 
+app.post("/admin/delete-result", async (req, res) => {
+
+  if (!req.session.admin) {
+    return res.json({ success: false });
+  }
+
+  const { resultId } = req.body;
+
+  try {
+
+    await db.query(
+      "DELETE FROM results WHERE id = $1",
+      [resultId]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.log(err);
+    res.json({ success: false });
+  }
+
+});
 
 /* ================= TEACHER DASHBOARD ================= */
 

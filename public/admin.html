@@ -59,6 +59,7 @@
         <th>Time Used</th>
         <th>Review</th>
         <th>Retake</th>
+        <th>Delete</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -198,11 +199,17 @@ tbody.innerHTML += `
     <td>${row.score}/${row.total}</td>
     <td>${timeDisplay}</td>
     <td><a href="/admin/view/${row.id}">View</a></td>
-    <td>
-      <button onclick="allowRetake(${row.id})">
-        Allow Retake
-      </button>
-    </td>
+<td>
+  <button onclick="allowRetake(${row.id})">
+    Allow Retake
+  </button>
+</td>
+
+<td>
+  <button onclick="deleteResult(${row.id})">
+    Delete
+  </button>
+</td>
   </tr>
 `;
     });
@@ -270,6 +277,83 @@ function allowRetake(resultId) {
     }
 
   });
+}
+function allowRetake(resultId) {
+
+  const confirmAction = confirm("Allow this student to retake this exam?");
+  if (!confirmAction) return;
+
+  fetch("/admin/allow-retake", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ resultId: resultId })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.success) {
+      alert("Retake allowed. Old result deleted.");
+      loadResults();
+    } else {
+      alert("Error allowing retake.");
+    }
+
+  });
+}
+
+/* PUT THE NEW FUNCTION RIGHT HERE */
+
+function deleteResult(id) {
+
+  const confirmDelete = confirm("Delete this result permanently?");
+  if (!confirmDelete) return;
+
+  fetch("/admin/delete-result", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      resultId: id
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.success) {
+      alert("Result deleted successfully");
+      loadResults();
+    } else {
+      alert("Failed to delete result");
+    }
+
+  });
+
+}
+
+/* DELETE RESULT */
+async function deleteResult(id){
+
+const confirmDelete = confirm("Delete this result permanently?");
+if(!confirmDelete) return;
+
+const res = await fetch("/admin-delete-result/" + id,{
+method:"DELETE"
+});
+
+const data = await res.json();
+
+if(data.success){
+
+alert("Result deleted successfully");
+loadResults();
+
+}else{
+
+alert("Failed to delete result");
+
+}
+
 }
 </script>
 

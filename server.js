@@ -535,7 +535,7 @@ if (questionIds && questionIds.length > 0) {
     `SELECT * FROM questions
      WHERE class_level = $1
      AND subject = $2
-     LIMIT 30`,
+     LIMIT 50`,
     [result.class_level, result.subject]
   );
 

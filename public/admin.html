@@ -338,9 +338,9 @@ function loadStudents() {
       data.forEach(student => {
         tbody.innerHTML += `
           <tr>
-            <td>${student.name}</td>
+            <td>${student.fullname}</td>
             <td>${student.username}</td>
-            <td>${student.class}</td>
+            <td>${student.class_level}</td>
             <td>
               <button onclick="deleteStudent(${student.id})">Delete</button>
             </td>

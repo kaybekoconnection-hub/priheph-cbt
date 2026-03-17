@@ -328,6 +328,7 @@ function deleteResult(id) {
 
 }
 function loadStudents() {
+
   fetch("/admin/students")
     .then(res => res.json())
     .then(data => {
@@ -335,20 +336,27 @@ function loadStudents() {
       const tbody = document.querySelector("#studentsTable tbody");
       tbody.innerHTML = "";
 
-      data.forEach(student => {
+      const students = data.rows;   // ✅ FIX: get the real data
+
+      students.forEach(student => {
+
         tbody.innerHTML += `
           <tr>
             <td>${student.fullname}</td>
             <td>${student.username}</td>
             <td>${student.class_level}</td>
             <td>
-              <button onclick="deleteStudent(${student.id})">Delete</button>
+              <button onclick="deleteStudent(${student.id})">
+                Delete
+              </button>
             </td>
           </tr>
         `;
+
       });
 
     });
+
 }
 
 function deleteStudent(id) {

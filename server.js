@@ -154,6 +154,44 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.delete("/admin/delete-student/:id", (req, res) => {
+    const studentId = req.params.id;
+
+    db.query("DELETE FROM students WHERE id = ?", [studentId], (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.json({ success: false });
+        }
+
+        res.json({ success: true });
+    });
+});
+
+// GET ALL STUDENTS
+app.get("/admin/students", (req, res) => {
+  db.query("SELECT * FROM students", (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.json([]);
+    }
+    res.json(result);
+  });
+});
+
+// DELETE STUDENT
+app.delete("/admin/delete-student/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM students WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.json({ success: false });
+    }
+
+    res.json({ success: true });
+  });
+});
+
 /* ================= ADMIN LOGIN PAGE ================= */
 app.get("/admin", (req, res) => {
   res.sendFile(__dirname + "/public/admin.html");

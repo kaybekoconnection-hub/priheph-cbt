@@ -92,6 +92,24 @@
 
   <p id="uploadMessage" style="font-weight:bold;"></p>
 
+  <hr>
+
+<h3>Registered Students</h3>
+
+<button onclick="loadStudents()">Load Students</button>
+
+<table id="studentsTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Username</th>
+      <th>Class</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
 </div>
 
 <script>
@@ -304,6 +322,51 @@ function deleteResult(id) {
       loadResults();
     } else {
       alert("Failed to delete result");
+    }
+
+  });
+
+}
+function loadStudents() {
+  fetch("/admin/students")
+    .then(res => res.json())
+    .then(data => {
+
+      const tbody = document.querySelector("#studentsTable tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(student => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${student.name}</td>
+            <td>${student.username}</td>
+            <td>${student.class}</td>
+            <td>
+              <button onclick="deleteStudent(${student.id})">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+
+    });
+}
+
+function deleteStudent(id) {
+
+  const confirmDelete = confirm("Delete this student?");
+  if (!confirmDelete) return;
+
+  fetch("/admin/delete-student/" + id, {
+    method: "DELETE"
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.success) {
+      alert("Student deleted successfully");
+      loadStudents();
+    } else {
+      alert("Delete failed");
     }
 
   });

@@ -154,18 +154,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.delete("/admin/delete-student/:id", (req, res) => {
-    const studentId = req.params.id;
-
-    db.query("DELETE FROM students WHERE id = ?", [studentId], (err, result) => {
-        if (err) {
-            console.log(err);
-            return res.json({ success: false });
-        }
-
-        res.json({ success: true });
-    });
-});
 
 // GET ALL STUDENTS
 app.get("/admin/students", (req, res) => {
@@ -179,26 +167,29 @@ app.get("/admin/students", (req, res) => {
 });
 
 // DELETE STUDENT
-app.delete("/admin/delete-student/:id", (req, res) => {
+app.post("/admin/delete-student", async (req, res) => {
 
-  const id = req.params.id;
+  const id = req.body.id;
 
-  console.log("Deleting student ID:", id); // 👈 helps debug
+  console.log("Deleting student ID:", id);
 
-  db.query("DELETE FROM students WHERE id = ?", [id], (err, result) => {
+  try {
 
-    if (err) {
-      console.log("Delete error:", err);
-      return res.json({ success: false });
-    }
+    const result = await db.query(
+      "DELETE FROM students WHERE id = $1",
+      [id]
+    );
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.json({ success: false });
     }
 
     res.json({ success: true });
 
-  });
+  } catch (err) {
+    console.log(err);
+    res.json({ success: false });
+  }
 
 });
 

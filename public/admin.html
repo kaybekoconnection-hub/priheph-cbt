@@ -364,26 +364,24 @@ function deleteStudent(id) {
   const confirmDelete = confirm("Delete this student?");
   if (!confirmDelete) return;
 
-  fetch("/admin/delete-student/" + id, {
-    method: "DELETE"
+  fetch("/admin/delete-student", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ id: id })
   })
   .then(res => res.json())
   .then(data => {
-
     if (data.success) {
       alert("Student deleted successfully");
       loadStudents();
     } else {
       alert("Delete failed");
     }
-
   });
 
 }
-
-
-
-
 </script>
 
 </body>

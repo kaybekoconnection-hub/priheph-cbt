@@ -180,16 +180,26 @@ app.get("/admin/students", (req, res) => {
 
 // DELETE STUDENT
 app.delete("/admin/delete-student/:id", (req, res) => {
+
   const id = req.params.id;
 
+  console.log("Deleting student ID:", id); // 👈 helps debug
+
   db.query("DELETE FROM students WHERE id = ?", [id], (err, result) => {
+
     if (err) {
-      console.log(err);
+      console.log("Delete error:", err);
+      return res.json({ success: false });
+    }
+
+    if (result.affectedRows === 0) {
       return res.json({ success: false });
     }
 
     res.json({ success: true });
+
   });
+
 });
 
 /* ================= ADMIN LOGIN PAGE ================= */

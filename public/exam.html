@@ -283,7 +283,7 @@ function startTimer() {
 
   if (!endTime) {
     // If not, create new end time (30 mins from now)
-    endTime = Date.now() + (30 * 60 * 1000);
+    endTime = Date.now() + (3 * 60 * 1000);
  localStorage.setItem("examEndTime_" + studentData.id + "_" + selectedSubject, endTime);
   } else {
     endTime = parseInt(endTime);

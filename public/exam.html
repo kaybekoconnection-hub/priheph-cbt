@@ -279,15 +279,7 @@ function startTimer() {
   clearInterval(timerInterval);
 
   // Check if end time already exists
-  let endTime = localStorage.getItem("examEndTime_" + studentData.id + "_" + selectedSubject);
-
-  if (!endTime) {
-    // If not, create new end time (30 mins from now)
-    endTime = Date.now() + (3 * 60 * 1000);
- localStorage.setItem("examEndTime_" + studentData.id + "_" + selectedSubject, endTime);
-  } else {
-    endTime = parseInt(endTime);
-  }
+  let endTime = Date.now() + (3 * 60 * 1000);
 
   timerInterval = setInterval(() => {
 

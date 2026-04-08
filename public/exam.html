@@ -67,7 +67,7 @@
             <div id="studentInfo"></div>
         </div>
 
-        <div id="timer">30:00</div>
+        <div id="timer">40:00</div>
 
     </div>
 </div>
@@ -98,7 +98,7 @@
 document.addEventListener("DOMContentLoaded", function() {
 
 let questions = [];
-let timeLeft = 1800;
+let timeLeft = 2400;
 let timerInterval;
 let studentData = null;
 let selectedSubject = "";
@@ -281,7 +281,7 @@ function startTimer() {
   clearInterval(timerInterval);
 
   // Check if end time already exists
-  let endTime = Date.now() + (30 * 60 * 1000);
+  let endTime = Date.now() + (40 * 60 * 1000);
 
   timerInterval = setInterval(() => {
 

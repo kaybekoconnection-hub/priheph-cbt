@@ -41,7 +41,7 @@ classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
 {
 username: "rachael001",
 password: "12345",
-subjects: ["MATHEMATICS"],
+subjects: ["MATHEMATICS","FURTHER MATHEMATICS"],
 classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
 },
 
@@ -92,6 +92,20 @@ classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
 username: "ruth001",
 password: "12345",
 subjects: ["HISTORY","CCA","HOME MANAGEMENT"],
+classes: ["JSS1","JSS2","JSS3"]
+},
+
+{
+username: "ope001",
+password: "12345",
+subjects: ["ENGLISH"],
+classes: ["JSS1","JSS2","JSS3","SS1","SS2","SS3"]
+},
+
+{
+username: "peter001",
+password: "12345",
+subjects: ["MATHEMATICS"],
 classes: ["JSS1","JSS2","JSS3"]
 },
 
